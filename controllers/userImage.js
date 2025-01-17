@@ -9,7 +9,7 @@ const s3 = new aws.S3();
 const path = require("path");
 const multer = require("multer");
 const multerS3 = require("multer-s3");
-const User = require("../modules/user");
+const User = require("../model/user");
 
 aws.config.update({
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,

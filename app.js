@@ -18,6 +18,12 @@ app.use("/api/users", users_route);
 const image_route = require("./routes/userImage");
 app.use("/api/users/user-image", image_route);
 
+const transactions_route = require("./routes/transactions");
+app.use("/api/users/transactions", transactions_route);
+
+const transh_route = require("./routes/trash");
+app.use("/api/users/trash", transh_route);
+
 async function start() {
   try {
     await connectDB();

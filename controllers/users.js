@@ -1,4 +1,4 @@
-const User = require("../modules/user");
+const User = require("../model/user");
 
 // Utility function to generate unique IDs
 function generateUniqueId() {
