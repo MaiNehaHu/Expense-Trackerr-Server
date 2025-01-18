@@ -2,11 +2,13 @@ const express = require('express');
 const router = express.Router();
 
 // Import controller functions
-const { addTrash, getAllTrashs, editTrash, deleteTrash, emptyTrash } = require('../controllers/transactions');
+const { getAllTrashs, deleteTrash, emptyTrash } = require('../controllers/trash');
 
 // Route to get all posts
-// router.route('/').get(getAllTrashs).post(addTrash)
+router.route('/:id').get(getAllTrashs)
 
-// router.route('/delete').put(editTrash).delete(deleteTrash).delete(emptyTrash)
+router.route('/:id').delete(deleteTrash)
+
+router.route('/clean/:id').delete(emptyTrash)
 
 module.exports = router;
