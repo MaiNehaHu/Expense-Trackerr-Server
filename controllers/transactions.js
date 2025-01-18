@@ -59,8 +59,8 @@ async function getAllTransactions(req, res) {
 
 // Edit a transaction
 async function editTransaction(req, res) {
-  const { id: userId } = req.params;
-  const { transactionId, amount, note, status, transactor, contactOfTransactor, image, reminder, category } = req.body;
+  const { id: userId, transactionId } = req.params;
+  const { amount, note, status, transactor, contactOfTransactor, image, reminder, category } = req.body;
 
   try {
     // Find the user by userId
@@ -98,9 +98,8 @@ async function editTransaction(req, res) {
 
 // Delete a transaction (move to trash)
 async function deleteTransaction(req, res) {
-  const { id: userId } = req.params;
-  const { transactionId } = req.body;
-
+  const { id: userId, transactionId } = req.params;
+  
   try {
     // Find the user by userId
     const user = await User.findOne({ userId }).populate("transactions");

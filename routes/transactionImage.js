@@ -5,11 +5,11 @@ const {
   uploadImage,
   deleteImage,
   handleImageUpload,
-} = require("../controllers/userImage");
+} = require("../controllers/transactionImage");
 
 // Route to upload and delete images
-router.post("/:id", uploadImage.single("file"), handleImageUpload);
+router.post("/:id/:transactionId", uploadImage.single("file"), handleImageUpload);
 
-router.delete("/:id", deleteImage);
+router.delete("/:id/:transactionId", deleteImage);
 
 module.exports = router;

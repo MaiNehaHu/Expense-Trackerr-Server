@@ -9,6 +9,6 @@ router.route('/:id').post(addTransaction)
 
 router.route('/:id').get(getAllTransactions)
 
-router.route('/:id').put(editTransaction).delete(deleteTransaction)
+router.route('/:id/:transactionId').put(editTransaction).delete(deleteTransaction);
 
 module.exports = router;

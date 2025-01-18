@@ -76,6 +76,8 @@ async function editUser(req, res) {
 async function deleteUser(req, res) {
   try {
     const { id } = req.params;
+    // add logic to delete user image
+    // logic to delete all images of transactions
 
     const user = await User.findOneAndDelete({ userId: id });
     if (!user) {
