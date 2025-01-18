@@ -6,7 +6,7 @@ const transactionSchema = new mongoose.Schema(
     editedAt: { type: Date },
     amount: { type: Number, required: true },
     note: { type: String, default: "" },
-    status: { type: String, default: "pending" },
+    status: { type: String, default: "Pending" },
     category: {
       hexColor: { type: String, default: "#707070" },
       name: { type: String, default: "Others" },

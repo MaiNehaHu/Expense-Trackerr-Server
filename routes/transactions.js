@@ -5,8 +5,10 @@ const router = express.Router();
 const { addTransaction, getAllTransactions, editTransaction, deleteTransaction } = require('../controllers/transactions');
 
 // Route to get all posts
-router.route('/').get(getAllTransactions).post(addTransaction)
+router.route('/:id').post(addTransaction)
 
-router.route('/delete').put(editTransaction).delete(deleteTransaction)
+router.route('/:id').get(getAllTransactions)
+
+router.route('/:id').put(editTransaction).delete(deleteTransaction)
 
 module.exports = router;
