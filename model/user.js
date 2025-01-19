@@ -19,6 +19,12 @@ const userSchema = new mongoose.Schema(
         code: { type: String, default: "en" },
         name: { type: String, default: "English" },
       },
+      currency:{
+        symbol: { type: String, default: "₹" },
+        side: { type: String, default: "left" },
+        decimalSeparator: { type: String, default: "." },
+        thousandSeparator: { type: String, default: "," },
+      },
       reminderToAddTrans: { type: Boolean, default: false },
       screenLock: { type: Boolean, default: false },
       autoBackup: { type: Boolean, default: true },
