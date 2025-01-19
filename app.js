@@ -30,6 +30,9 @@ app.use("/api/trash", transh_route);
 const empty_transh_route = require("./routes/emptyTrash");
 app.use("/api/empty-trash", empty_transh_route);
 
+const search_route = require("./routes/search");
+app.use("/api/search", search_route);
+
 async function start() {
   try {
     await connectDB();
