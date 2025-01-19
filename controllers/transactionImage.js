@@ -55,6 +55,17 @@ const handleImageUpload = async (req, res) => {
 
     const imageURL = req.file.location;
 
+    // Update the image URL in the Transaction database first
+    const updatedTransaction = await Transaction.findByIdAndUpdate(
+      transactionId,
+      { image: imageURL },
+      { new: true }
+    );
+
+    if (!updatedTransaction) {
+      return res.status(404).json({ error: "Transaction not found in database" });
+    }
+
     // Find the user by userId
     const user = await User.findOne({ userId });
 
@@ -62,24 +73,28 @@ const handleImageUpload = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Find the specific transaction in the transactions array and update the image URL
+    // Find the specific transaction in the user's transactions array
     const transactionIndex = user.transactions.findIndex(
       (txn) => txn._id.toString() === transactionId
     );
 
     if (transactionIndex === -1) {
-      return res.status(404).json({ error: "Transaction not found" });
+      return res.status(404).json({ error: "Transaction not found in user's transactions" });
     }
 
-    // Update the image URL of the specific transaction
-    user.transactions[transactionIndex].image = imageURL;
+    // Update the image URL in the user's transactions array
+    user.transactions[transactionIndex].image = updatedTransaction.image;
 
-    // Save the updated user data with the modified transaction
+    // Mark the transactions array as modified
+    user.markModified(`transactions.${transactionIndex}`);
+
+    // Save the updated user data
     await user.save();
 
     res.status(200).json({
       message: "Image uploaded successfully to transaction",
-      transaction: user.transactions[transactionIndex],
+      transaction_image: updatedTransaction.image,
+      user_transaction_image: user.transactions[transactionIndex].image,
     });
   } catch (error) {
     console.error("Error uploading image:", error);
@@ -93,12 +108,16 @@ async function deleteImage(req, res) {
     const { id: userId, transactionId } = req.params;
     const { imageURL } = req.query;
 
-    if (!imageURL) {
-      return res.status(400).json({ error: "Image URL is required." });
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
     }
 
-    if (!userId || !transactionId) {
-      return res.status(400).json({ error: "User ID and Transaction ID are required." });
+    if (!transactionId) {
+      return res.status(400).json({ error: "transactionId is required" });
+    }
+
+    if (!imageURL) {
+      return res.status(400).json({ error: "Image URL is required." });
     }
 
     // Extract the image key from the URL
@@ -115,31 +134,46 @@ async function deleteImage(req, res) {
     await s3.deleteObject(params).promise();
     console.log("Image deleted successfully from AWS S3.");
 
-    // Find the user and update the specific transaction
+    // Update the image URL in the Transaction database
+    const updatedTransaction = await Transaction.findByIdAndUpdate(
+      transactionId,
+      { image: "" },
+      { new: true }
+    );
+
+    if (!updatedTransaction) {
+      return res.status(404).json({ error: "Transaction not found in database." });
+    }
+
+    // Find the user by userId
     const user = await User.findOne({ userId });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Find the transaction to update and remove the image
+    // Find the transaction in the user's transactions array
     const transactionIndex = user.transactions.findIndex(
       (txn) => txn._id.toString() === transactionId
     );
 
     if (transactionIndex === -1) {
-      return res.status(404).json({ error: "Transaction not found" });
+      return res.status(404).json({ error: "Transaction not found in user's transactions." });
     }
 
-    // Remove the image from the specific transaction
+    // Update the image URL in the user's transactions array
     user.transactions[transactionIndex].image = "";
 
-    // Save the updated user data with the modified transaction
+    // Mark the transactions array as modified
+    user.markModified(`transactions.${transactionIndex}`);
+
+    // Save the updated user data
     await user.save();
 
     res.status(200).json({
       message: "Image deleted successfully from transaction.",
-      updatedTransaction: user.transactions[transactionIndex],
+      transaction_image: updatedTransaction.image,
+      user_transaction_image: user.transactions[transactionIndex].image,
     });
   } catch (error) {
     console.error("Error deleting image:", error);

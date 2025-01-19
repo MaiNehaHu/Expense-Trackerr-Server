@@ -1,4 +1,5 @@
 const User = require("../model/user");
+const Transaction = require('../model/transaction')
 
 async function getAllTrashs(req, res) {
   const { id: userId } = req.params;
@@ -34,17 +35,23 @@ async function deleteTrash(req, res) {
       return res.status(404).json({ message: "Transaction not found in trash" });
     }
 
-    // Remove the transaction
+    // Remove the transaction from the trash array
     user.trash.splice(trashIndex, 1);
 
     // Save the updated user data
     await user.save();
 
+    // Get the transaction ID to delete from the transactions database
+    const transactionId = user.trash[trashIndex]._id;
+
+    // Delete the transaction from the transactions database
+    await Transaction.findByIdAndDelete(transactionId);
+
     // Respond with success message
-    res.status(200).json({ message: "Transaction deleted from trash successfully" });
+    res.status(200).json({ message: "Transaction deleted from trash and database successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error deleting transaction from trash", error });
+    res.status(500).json({ message: "Error deleting transaction from trash and database", error });
   }
 }
 
@@ -59,16 +66,22 @@ async function emptyTrash(req, res) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Clear the trash array
+    // Extract transaction IDs from the trash
+    const transactionIds = user.trash.map((txn) => txn._id);
+
+    // Delete the transactions from the transactions database
+    await Transaction.deleteMany({ _id: { $in: transactionIds } });
+
+    // Clear the trash array in the user's data
     user.trash = [];
 
     // Save the updated user data
     await user.save();
 
-    res.status(200).json({ message: "Trash emptied successfully" });
+    res.status(200).json({ message: "Trash emptied successfully and transactions deleted" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error emptying trash", error });
+    res.status(500).json({ message: "Error emptying trash and deleting transactions", error });
   }
 }
 
