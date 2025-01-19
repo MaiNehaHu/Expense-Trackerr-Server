@@ -31,7 +31,7 @@ const uploadImage = multer({
     },
     key: function (req, file, callBack) {
       const fileExtension = path.extname(file.originalname);
-      callBack(null, "image_" + Date.now().toString() + fileExtension);
+      callBack(null, "transaction_image_" + Date.now().toString() + fileExtension);
     },
   }),
 });
