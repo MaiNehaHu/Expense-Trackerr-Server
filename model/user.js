@@ -9,6 +9,10 @@ const userSchema = new mongoose.Schema(
       type: [Object],
       required: true,
     },
+    recuringTransactions: {
+      type: [Object],
+      required: true,
+    },
     trash: {
       type: [Object],
       required: true,

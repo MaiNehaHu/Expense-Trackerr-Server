@@ -21,6 +21,9 @@ app.use("/api/user-image", image_route);
 const transactions_route = require("./routes/transactions");
 app.use("/api/transactions", transactions_route);
 
+const recuring_transactions_route = require("./routes/recuringTransactions");
+app.use("/api/recuring-transactions", recuring_transactions_route);
+
 const transaction_img_route = require("./routes/transactionImage");
 app.use("/api/transaction-image", transaction_img_route);
 

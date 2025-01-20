@@ -12,9 +12,9 @@ const transactionSchema = new mongoose.Schema(
       name: { type: String, default: "Others" },
       sign: { type: String, default: "-" },
       type: {
-          type: String,
-          enum: ["Spent", "Earned", "Borrowed", "Lend"],
-          default: "Spent",
+        type: String,
+        enum: ["Spent", "Earned", "Borrowed", "Lend"],
+        default: "Spent",
       }
     },
     transactor: { type: String },
