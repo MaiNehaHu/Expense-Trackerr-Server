@@ -3,7 +3,8 @@ const mongoose = require("mongoose");
 const recuringTransactionSchema = new mongoose.Schema(
     {
         recuring: {
-            count: { type: Number, default: 1 },
+            count: { type: Number, default: 1, required: true },
+            pushedCount: { type: Number, default: 0, required: true },
             interval: {
                 type: String,
                 default: "Everyday",

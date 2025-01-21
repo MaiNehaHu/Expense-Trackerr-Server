@@ -152,7 +152,7 @@ const checkAndAddRecuringTransactions = async (req, res) => {
         const currentMonthName = currentDate.toLocaleDateString("en-US", { month: "long" });
 
         for (const recuring of user.recuringTransactions) {
-            const { recuring: { count, interval, when } } = recuring;
+            const { recuring: { count, pushedCount, interval, when } } = recuring;
 
             if (count <= 0) {
                 console.log("Recurring transaction has a count of 0 and cannot be processed.");
@@ -195,40 +195,52 @@ const checkAndAddRecuringTransactions = async (req, res) => {
                     _id: recuring._id,
                 };
 
-                user.transactions.push(transaction);
-
-                if (count > 1) {
-                    // Update recuring count manually without `save`
-                    recuring.recuring.count -= 1;
-
-                    // Since `recuring` may not be a mongoose document, create a new Mongoose instance
-                    const recuringModel = await RecuringTransaction.findById(recuring._id);
-                    if (recuringModel) {
-                        recuringModel.recuring.count -= 1;
-                        await recuringModel.save();
-                        console.log("Recurring transaction updated:", recuring._id);
-                    } else {
-                        console.error("Failed to find recurring transaction to update.");
-                    }
-
-                } else if (count === 1) {
-                    user.recuringTransactions = user.recuringTransactions.filter(
-                        (rec) => rec._id.toString() !== recuring._id.toString()
+                if (count >= 1 && count > pushedCount) {
+                    user.transactions.push(transaction);
+                
+                    // Ensure `pushedCount` is a valid number
+                    recuring.pushedCount = recuring.pushedCount || 0;
+                
+                    const result = await RecuringTransaction.updateOne(
+                        { _id: recuring._id },
+                        { $inc: { "recuring.pushedCount": 1 } } 
+                        // Use `$inc` to increment the field
                     );
-                    try {
-                        await recuring.remove(); // Remove from the user document
-                        console.log("Recurring transaction removed:", recuring._id);
-                    } catch (error) {
-                        console.error("Error removing recurring transaction:", error);
+                
+                    // Update the `recuringTransactions` array in `user`
+                    const recuringIndex = user.recuringTransactions.findIndex(
+                        (rec) => rec._id.toString() === recuring._id.toString()
+                    );
+                
+                    if (recuringIndex !== -1) {
+                        user.recuringTransactions[recuringIndex].recuring.pushedCount += 1;
+                
+                        user.markModified(`recuringTransactions.${recuringIndex}`);
+                    } else {
+                        console.error(`Recurring transaction with ID: ${recuring._id} not found in user's recuringTransactions.`);
                     }
-                }
+                
+                    // Save the `user` document
+                    await user.save();
+                
+                    if (result.modifiedCount > 0) {
+                        console.log(`Transaction pushed and pushedCount incremented to: ${recuring.pushedCount + 1}`);
+                    } else {
+                        console.error("Failed to update pushedCount for recurring transaction.");
+                    }
+                } else {
+                    console.log(`pushedCount:${pushedCount} matches count:${count}`);
+                }                
             }
         }
 
+        // save
         await user.save();
+
+        // Send Success Response
         res.status(200).json({ message: "Recurring Transactions Processed Successfully" });
     } catch (error) {
-        res.status(500).json({ message: "Error checking recurring transactions", error });
+        res.status(500).json({ message: "Error Processing Recurring Transactions", error });
     }
 };
 
