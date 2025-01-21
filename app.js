@@ -30,6 +30,9 @@ app.use("/api/transaction-image", transaction_img_route);
 const transh_route = require("./routes/trash");
 app.use("/api/trash", transh_route);
 
+const categories_route = require("./routes/category");
+app.use("/api/categories", categories_route);
+
 const empty_transh_route = require("./routes/emptyTrash");
 app.use("/api/empty-trash", empty_transh_route);
 

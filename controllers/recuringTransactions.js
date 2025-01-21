@@ -90,7 +90,17 @@ async function deleteRecuringTransaction(req, res) {
 
 async function editRecuringTransactions(req, res) {
     const { id: userId, recuringtransactionId } = req.params;
-    const { recuring, amount, note, status, transactor, contactOfTransactor, image, reminder, category } = req.body;
+    const {
+        recuring,
+        amount,
+        note,
+        status,
+        transactor,
+        contactOfTransactor,
+        image,
+        reminder,
+        category,
+    } = req.body;
 
     try {
         // Fetch the user document
@@ -102,32 +112,52 @@ async function editRecuringTransactions(req, res) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Find the index of the recurring transaction in the user's transactions
-        const transactionIndex = user.recuringTransactions.findIndex((txn) => txn._id.toString() === recuringtransactionId);
+        // Find the recurring transaction in the user's records
+        const transactionIndex = user.recuringTransactions.findIndex(
+            (txn) => txn._id.toString() === recuringtransactionId
+        );
+
         if (transactionIndex === -1) {
             return res.status(404).json({ message: "Recurring Transaction not found in user's records" });
         }
 
-        // Update the fields for the recurring transaction
-        const recuringTransactions = user.recuringTransactions[transactionIndex];
+        // Get the recurring transaction from the user's transactions
+        const recuringTransaction = user.recuringTransactions[transactionIndex];
 
-        if (recuring !== undefined) recuringTransactions.recuring = recuring;
-        if (amount !== undefined) recuringTransactions.amount = amount;
-        if (note !== undefined) recuringTransactions.note = note;
-        if (status !== undefined) recuringTransactions.status = status;
-        if (transactor !== undefined) recuringTransactions.transactor = transactor;
-        if (contactOfTransactor !== undefined) recuringTransactions.contactOfTransactor = contactOfTransactor;
-        if (image !== undefined) recuringTransactions.image = image;
-        if (reminder !== undefined) recuringTransactions.reminder = reminder;
-        if (category !== undefined) recuringTransactions.category = category;
+        // Update fields in the `RecuringTransaction` document
+        const updatedFields = {};
+        if (recuring !== undefined) updatedFields.recuring = recuring;
+        if (amount !== undefined) updatedFields.amount = amount;
+        if (note !== undefined) updatedFields.note = note;
+        if (status !== undefined) updatedFields.status = status;
+        if (transactor !== undefined) updatedFields.transactor = transactor;
+        if (contactOfTransactor !== undefined) updatedFields.contactOfTransactor = contactOfTransactor;
+        if (image !== undefined) updatedFields.image = image;
+        if (reminder !== undefined) updatedFields.reminder = reminder;
+        if (category !== undefined) updatedFields.category = category;
 
-        // Mark the transactions array as modified to notify Mongoose
+        // Update the transaction in the `RecuringTransaction` database
+        const updatedTransaction = await RecuringTransaction.findByIdAndUpdate(
+            recuringtransactionId,
+            { $set: updatedFields },
+            { new: true }
+        );
+
+        if (!updatedTransaction) {
+            return res.status(404).json({ message: "Recurring Transaction not found in the database" });
+        }
+
+        // Update the transaction in the user's document
+        Object.assign(recuringTransaction, updatedFields);
         user.markModified(`recuringTransactions.${transactionIndex}`);
 
-        // Save the updated user document
+        // Save the user document
         await user.save();
 
-        res.status(200).json({ message: "Recurring Transaction updated successfully", recuringTransactions });
+        res.status(200).json({
+            message: "Recurring Transaction updated successfully",
+            updatedTransaction,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Error Editing Recurring Transaction", error });
@@ -197,32 +227,32 @@ const checkAndAddRecuringTransactions = async (req, res) => {
 
                 if (count >= 1 && count > pushedCount) {
                     user.transactions.push(transaction);
-                
+
                     // Ensure `pushedCount` is a valid number
                     recuring.pushedCount = recuring.pushedCount || 0;
-                
+
                     const result = await RecuringTransaction.updateOne(
                         { _id: recuring._id },
-                        { $inc: { "recuring.pushedCount": 1 } } 
+                        { $inc: { "recuring.pushedCount": 1 } }
                         // Use `$inc` to increment the field
                     );
-                
+
                     // Update the `recuringTransactions` array in `user`
                     const recuringIndex = user.recuringTransactions.findIndex(
                         (rec) => rec._id.toString() === recuring._id.toString()
                     );
-                
+
                     if (recuringIndex !== -1) {
                         user.recuringTransactions[recuringIndex].recuring.pushedCount += 1;
-                
+
                         user.markModified(`recuringTransactions.${recuringIndex}`);
                     } else {
                         console.error(`Recurring transaction with ID: ${recuring._id} not found in user's recuringTransactions.`);
                     }
-                
+
                     // Save the `user` document
                     await user.save();
-                
+
                     if (result.modifiedCount > 0) {
                         console.log(`Transaction pushed and pushedCount incremented to: ${recuring.pushedCount + 1}`);
                     } else {
@@ -230,7 +260,7 @@ const checkAndAddRecuringTransactions = async (req, res) => {
                     }
                 } else {
                     console.log(`pushedCount:${pushedCount} matches count:${count}`);
-                }                
+                }
             }
         }
 

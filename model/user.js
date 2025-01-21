@@ -17,6 +17,10 @@ const userSchema = new mongoose.Schema(
       type: [Object],
       required: true,
     },
+    categories: {
+      type: [Object],
+      required: true,
+    },
     settings: {
       theme: { type: String, default: "light" },
       language: {
