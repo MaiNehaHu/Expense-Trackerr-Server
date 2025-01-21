@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
+    name: { type: String, required: true, default: "User Name" },
     userId: { type: String, required: true, unique: true },
     userImage: { type: String, default: "" },
     transactions: {
@@ -23,9 +23,9 @@ const userSchema = new mongoose.Schema(
         code: { type: String, default: "en" },
         name: { type: String, default: "English" },
       },
-      currency:{
+      currency: {
         symbol: { type: String, default: "₹" },
-        side: { type: String, default: "left",enum: ["left", "right"] },
+        side: { type: String, default: "left", enum: ["left", "right"] },
         decimalSeparator: { type: String, default: "." },
         thousandSeparator: { type: String, default: "," },
       },
