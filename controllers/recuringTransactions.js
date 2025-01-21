@@ -1,4 +1,4 @@
-const RecuringTransaction = require('../model/recuringTransactions');
+const RecuringTransaction = require('../model/recuringTransaction');
 const User = require('../model/user');
 
 async function getAllRecuringTransactions(req, res) {
