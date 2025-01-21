@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema(
       },
       currency:{
         symbol: { type: String, default: "₹" },
-        side: { type: String, default: "left" },
+        side: { type: String, default: "left",enum: ["left", "right"] },
         decimalSeparator: { type: String, default: "." },
         thousandSeparator: { type: String, default: "," },
       },

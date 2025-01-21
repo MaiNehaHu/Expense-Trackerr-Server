@@ -52,7 +52,7 @@ const recuringTransactionSchema = new mongoose.Schema(
         category: {
             hexColor: { type: String, default: "#707070" },
             name: { type: String, default: "Others" },
-            sign: { type: String, default: "-" },
+            sign: { type: String, default: "-", enum: ["+", "-"] },
             type: {
                 type: String,
                 enum: ["Spent", "Earned", "Borrowed", "Lend"],
