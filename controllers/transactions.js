@@ -169,7 +169,12 @@ const checkAndPushReminder = async (req, res) => {
         reminderDate.getMonth() === twoDaysLater.getMonth() &&
         reminderDate.getDate() === twoDaysLater.getDate();
 
-      if (isTwoDaysLater) {
+      const isToday =
+        reminderDate.getFullYear() === currentDate.getFullYear() &&
+        reminderDate.getMonth() === currentDate.getMonth() &&
+        reminderDate.getDate() === currentDate.getDate();
+
+      if (isTwoDaysLater || isToday) {
         const notification = {
           header: "Reminder for Recurring Transaction",
           type: "Recurring",
