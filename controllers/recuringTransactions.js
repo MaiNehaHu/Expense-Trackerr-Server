@@ -194,21 +194,21 @@ const checkAndAddRecuringTransactions = async (req, res) => {
             switch (interval) {
                 case "Everyday":
                     shouldAdd = when.everyDay === currentTime;
-                    console.log(when.everyDay, currentTime);
+                    console.log(when.everyDay, " and ", currentTime);
                     break;
                 case "Every week":
                     shouldAdd = when.everyWeek === currentWeekName;
-                    console.log(when.everyWeek, currentWeekName);
+                    console.log(when.everyWeek, " and ", currentWeekName);
                     break;
                 case "Every month":
                     shouldAdd = when.everyMonth === currentDayOfMonth;
-                    console.log(when.everyMonth, currentDayOfMonth);
+                    console.log(when.everyMonth, " and ", currentDayOfMonth);
                     break;
                 case "Every year":
                     shouldAdd =
                         when.everyYear.month === currentMonthName &&
                         when.everyYear.date === currentDayOfMonth;
-                    console.log(when.everyYear.month, currentMonthName, when.everyYear.date, currentDayOfMonth);
+                    console.log(when.everyYear.month, when.everyYear.date, " and ", currentMonthName, currentDayOfMonth);
                     break;
             }
 
@@ -225,8 +225,16 @@ const checkAndAddRecuringTransactions = async (req, res) => {
                     _id: recuring._id,
                 };
 
+                const notification = {
+                    header: "",
+                    type: "Recuring",
+                    read: false,
+                    transaction // total transaction
+                };
+
                 if (count >= 1 && count > pushedCount) {
                     user.transactions.push(transaction);
+                    user.notifications.push(notification);
 
                     // Ensure `pushedCount` is a valid number
                     recuring.pushedCount = recuring.pushedCount || 0;
