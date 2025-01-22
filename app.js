@@ -42,6 +42,9 @@ app.use("/api/notifications", notifications_route);
 const search_route = require("./routes/search");
 app.use("/api/search", search_route);
 
+const budgets_route = require("./routes/budgets");
+app.use("/api/budgets", budgets_route);
+
 async function start() {
   try {
     await connectDB();
