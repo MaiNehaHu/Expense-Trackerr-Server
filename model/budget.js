@@ -5,9 +5,17 @@ const budgetSchema = new mongoose.Schema(
         type: { type: String, enum: ["month", "year"] },
         period: {
             monthAndYear: {
-                type: String,
-                required: function () {
-                    return this.type === "month";
+                month: {
+                    type: String,
+                    required: function () {
+                        return this.type === "month";
+                    }
+                },
+                year: {
+                    type: String,
+                    required: function () {
+                        return this.type === "month";
+                    }
                 }
             },
             year: {
