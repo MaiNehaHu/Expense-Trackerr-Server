@@ -33,7 +33,7 @@ async function getSearchResults(req, res) {
             );
         });
 
-        return res.status(200).json({ transactions: matchingTransactions });
+        return res.status(200).json(matchingTransactions);
     } catch (error) {
         console.error('Error fetching search results:', error);
         return res.status(500).json({ message: 'Internal server error.' });

@@ -10,7 +10,7 @@ const getAllNotifications = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        res.status(200).json({ notifications: user.notifications });
+        res.status(200).json(user.notifications);
     } catch (error) {
         console.error(error);
         res.status(400).json({ message: "Error Getting Notifications: ", error });
@@ -39,7 +39,7 @@ const getTodayNotifications = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        res.status(200).json({ notifications: user.notifications });
+        res.status(200).json(user.notifications);
     } catch (error) {
         console.error(error);
         res.status(400).json({ message: 'Error Getting Notifications', error });

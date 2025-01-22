@@ -21,6 +21,7 @@ const transactionSchema = new mongoose.Schema(
     contactOfTransactor: { type: Number },
     image: { type: String },
     reminder: { type: Date },
+    reminded: { type: Boolean, default: false }
   },
   { timestamps: true }
 );

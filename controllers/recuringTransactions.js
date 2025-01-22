@@ -11,7 +11,7 @@ async function getAllRecuringTransactions(req, res) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        res.status(200).json({ transactions: user.recuringTransactions });
+        res.status(200).json(user.recuringTransactions);
     } catch (error) {
         res.status(500).json({ message: "Error getting recuring transaction", error });
     }
@@ -194,21 +194,21 @@ const checkAndAddRecuringTransactions = async (req, res) => {
             switch (interval) {
                 case "Everyday":
                     shouldAdd = when.everyDay === currentTime;
-                    console.log(when.everyDay, " and ", currentTime);
+                    console.log(when.everyDay, "<-->", currentTime);
                     break;
                 case "Every week":
                     shouldAdd = when.everyWeek === currentWeekName;
-                    console.log(when.everyWeek, " and ", currentWeekName);
+                    console.log(when.everyWeek, "<-->", currentWeekName);
                     break;
                 case "Every month":
                     shouldAdd = when.everyMonth === currentDayOfMonth;
-                    console.log(when.everyMonth, " and ", currentDayOfMonth);
+                    console.log(when.everyMonth, "<-->", currentDayOfMonth);
                     break;
                 case "Every year":
                     shouldAdd =
                         when.everyYear.month === currentMonthName &&
                         when.everyYear.date === currentDayOfMonth;
-                    console.log(when.everyYear.month, when.everyYear.date, " and ", currentMonthName, currentDayOfMonth);
+                    console.log(when.everyYear.month, when.everyYear.date, "<-->", currentMonthName, currentDayOfMonth);
                     break;
             }
 

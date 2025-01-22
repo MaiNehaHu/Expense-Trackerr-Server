@@ -50,7 +50,7 @@ async function getAllTransactions(req, res) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({ transactions: user.transactions });
+    res.status(200).json(user.transactions);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching transactions", error });
@@ -85,6 +85,8 @@ async function editTransaction(req, res) {
     if (reminder !== undefined) transaction.reminder = reminder;
     if (category !== undefined) transaction.category = category;
 
+    user.markModified(`transactions`);
+
     // Save the updated user data
     await user.save();
 
@@ -99,7 +101,7 @@ async function editTransaction(req, res) {
 // Delete a transaction (move to trash)
 async function deleteTransaction(req, res) {
   const { id: userId, transactionId } = req.params;
-  
+
   try {
     // Find the user by userId
     const user = await User.findOne({ userId }).populate("transactions");
@@ -133,4 +135,82 @@ async function deleteTransaction(req, res) {
   }
 }
 
-module.exports = { addTransaction, getAllTransactions, editTransaction, deleteTransaction };
+const checkAndPushReminder = async (req, res) => {
+  const { id: userId } = req.params;
+
+  try {
+    const user = await User.findOne({ userId }).populate("recuringTransactions");
+    if (!user) {
+      console.log("User not found");
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const currentDate = new Date();
+
+    // Calculate the date for two days from today
+    const twoDaysLater = new Date();
+    twoDaysLater.setDate(currentDate.getDate() + 2);
+
+    let notificationAdded = false;
+
+    for (const reminderTransaction of user.transactions) {
+      const { reminded, reminder } = reminderTransaction;
+
+      if (!reminder || reminded) {
+        console.log("Skipping transaction with no reminder or already reminded.");
+        continue; // Skip this transaction
+      }
+
+      const reminderDate = new Date(reminder);
+
+      // Check if the `reminder` matches two days after today
+      const isTwoDaysLater =
+        reminderDate.getFullYear() === twoDaysLater.getFullYear() &&
+        reminderDate.getMonth() === twoDaysLater.getMonth() &&
+        reminderDate.getDate() === twoDaysLater.getDate();
+
+      if (isTwoDaysLater) {
+        const notification = {
+          header: "Reminder for Recurring Transaction",
+          type: "Recurring",
+          read: false,
+          transaction: reminderTransaction,
+        };
+
+        if (!reminded) {
+          user.notifications.push(notification);
+
+          const transactionIndex = user.transactions.findIndex(
+            (rem) => rem._id.toString() === reminderTransaction._id.toString()
+          );
+
+          if (transactionIndex !== -1) {
+            // Ensure the `transaction` property exists before modifying
+            user.transactions[transactionIndex].reminded = true;
+
+            user.markModified(`transactions.${transactionIndex}`);
+            notificationAdded = true;
+          } else {
+            console.error(`Reminder transaction with ID: ${reminderTransaction._id} not found in user's transactions.`);
+          }
+        }
+      }
+    }
+
+    if (notificationAdded) {
+      await user.save();
+      console.log("Reminders processed and saved successfully.");
+    }
+
+    if (notificationAdded) {
+      res.status(200).json({ message: "Reminders processed successfully" });
+    } else {
+      res.status(200).json({ message: "No reminders matched the condition." });
+    }
+  } catch (error) {
+    console.error("Error checking and pushing reminders:", error);
+    res.status(500).json({ message: "Error processing reminders", error });
+  }
+};
+
+module.exports = { addTransaction, getAllTransactions, editTransaction, deleteTransaction, checkAndPushReminder };
