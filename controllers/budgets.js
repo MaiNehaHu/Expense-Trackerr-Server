@@ -41,6 +41,61 @@ const addBudget = async (req, res) => {
     }
 }
 
+const editBudget = async (req, res) => {
+    const { id: userId, budgetId } = req.params;
+    const updatedBudgetData = req.body;
+
+    try {
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Find the budget by budgetId in the Budget model
+        const budget = await Budget.findById(budgetId);
+        if (!budget) {
+            return res.status(404).json({ message: "Budget not found" });
+        }
+
+        if (updatedBudgetData.totalSpent !== undefined) {
+            budget.totalSpent = updatedBudgetData.totalSpent;
+        }
+        if (updatedBudgetData.categories) {
+            budget.categories = updatedBudgetData.categories;
+        }
+        if (updatedBudgetData.period) {
+            budget.period = updatedBudgetData.period;
+        }
+        if (updatedBudgetData.type) {
+            budget.type = updatedBudgetData.type;
+        }
+
+        await budget.save();
+
+        // Update the corresponding budget in the user's budgets array
+        const userBudgetIndex = user.budgets.findIndex(
+            (b) => b._id.toString() === budgetId
+        );
+
+        if (userBudgetIndex !== -1) {
+            user.budgets[userBudgetIndex] = {
+                ...user.budgets[userBudgetIndex],
+                ...updatedBudgetData,
+            };
+
+            user.markModified(`budgets.${userBudgetIndex}`);
+            await user.save();
+        } else {
+            console.log("No matching budget found in the user's budgets array.");
+        }
+
+        res.status(200).json({ message: "Budget Edited Successfully" });
+    } catch (error) {
+        console.error(error);
+        res.status(400).json({ message: "Error Editing Budget", error });
+    }
+};
+
 const deleteBudget = async (req, res) => {
     const { id: userId, budgetId } = req.params;
 
@@ -75,4 +130,4 @@ const deleteBudget = async (req, res) => {
     }
 }
 
-module.exports = { getAllBudgets, addBudget, deleteBudget }
+module.exports = { getAllBudgets, addBudget, editBudget, deleteBudget }
