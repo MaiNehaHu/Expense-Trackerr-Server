@@ -174,7 +174,7 @@ async function editTransaction(req, res) {
       return res.status(404).json({ message: "Transaction not found in user's records" });
     }
 
-    // Update transaction fields
+    // Update transaction fields in the user's transactions
     if (amount !== undefined) transaction.amount = amount;
     if (note !== undefined) transaction.note = note;
     if (status !== undefined) transaction.status = status;
@@ -184,13 +184,29 @@ async function editTransaction(req, res) {
     if (reminder !== undefined) transaction.reminder = reminder;
     if (category !== undefined) transaction.category = category;
 
-    user.markModified(`transactions`);
+    // Mark the transactions field as modified
+    user.markModified('transactions');
 
     // Save the updated user data
     await user.save();
 
+    // Update the transaction in the Transaction model
+    const updatedTransaction = await Transaction.findByIdAndUpdate(
+      transactionId,
+      {
+        $set: {
+          amount, note, status, transactor, contactOfTransactor, image, reminder, category,
+        },
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedTransaction) {
+      return res.status(404).json({ message: "Transaction not found in the Transaction model" });
+    }
+
     // Respond with the updated transaction
-    res.status(200).json({ message: "Transaction updated successfully", transaction });
+    res.status(200).json({ message: "Transaction updated successfully", transaction: updatedTransaction });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error updating transaction", error });
