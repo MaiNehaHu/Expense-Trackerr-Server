@@ -1,6 +1,8 @@
 // Import models
 const User = require("../model/user");
 const Transaction = require("../model/transaction");
+const Budget = require("../model/budget");
+const moment = require("moment");
 
 // Add a transaction
 async function addTransaction(req, res) {
@@ -30,12 +32,109 @@ async function addTransaction(req, res) {
 
     // Add the transaction to the user's transactions array
     user.transactions.push(savedTransaction);
+
+    // Update the budget with the transaction
+    await updateBudgetWithTransaction(savedTransaction, userId);
+
     await user.save();
 
     res.status(201).json({ message: "Transaction added successfully", transaction: savedTransaction });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error adding transaction", error });
+  }
+}
+
+async function updateBudgetWithTransaction(transaction, userId) {
+  try {
+    const transactionDate = moment(transaction.createdAt);
+
+    const budgetQuery = {
+      $or: [
+        {
+          type: "month",
+          "period.monthAndYear.month": transactionDate.format("MMMM"), // Month name
+          "period.monthAndYear.year": transactionDate.format("YYYY"),  // Year
+        },
+        {
+          type: "year",
+          "period.year": transactionDate.format("YYYY"), // Year
+        },
+      ],
+    };
+
+    // Find all matching budgets in the Budget model
+    const budgets = await Budget.find(budgetQuery);
+
+    if (!budgets || budgets.length === 0) {
+      console.log("No matching budgets found for the transaction date.");
+      return;
+    }
+
+    for (const budget of budgets) {
+      budget.totalSpent = (budget.totalSpent || 0) + transaction.amount;
+
+      const categoryIndex = budget.categories.findIndex(
+        (cat) => cat.category._id.toString() === transaction.category._id.toString()
+      );
+
+      if (categoryIndex !== -1) {
+        budget.categories[categoryIndex].spent =
+          (budget.categories[categoryIndex].spent || 0) + transaction.amount;
+      } else {
+        budget.categories.push({
+          budget: 0,
+          spent: transaction.amount,
+          category: transaction.category,
+        });
+      }
+
+      budget.markModified("totalSpent");
+      budget.markModified(`categories.${categoryIndex}`);
+      await budget.save();
+    }
+
+    console.log("Budgets updated successfully in the Budget model.");
+
+    // Update the budgets in the User model (user.budgets)
+    const user = await User.findOne({ userId });
+    if (!user) {
+      console.log("User not found for updating budgets.");
+      return;
+    }
+
+    for (const budget of budgets) {
+      const userBudgetIndex = user.budgets.findIndex((b) => {
+        if (b.type === "month") {
+          return (
+            b.type === budget.type &&
+            b.period.monthAndYear.month === transactionDate.format("MMMM") &&
+            b.period.monthAndYear.year === transactionDate.format("YYYY")
+          );
+        } else if (b.type === "year") {
+          return (
+            b.type === budget.type &&
+            b.period.year === transactionDate.format("YYYY")
+          );
+        }
+        return false;
+      });
+
+      if (userBudgetIndex !== -1) {
+        user.budgets[userBudgetIndex] = budget;
+        user.markModified(`budgets.${userBudgetIndex}`);
+      } else {
+        console.log(
+          `No matching budget found in the user's budgets array for ${budget.type}.`
+        );
+      }
+    }
+
+    await user.save();
+    console.log("Budgets updated successfully in the User model.");
+  } catch (error) {
+    console.error("Error updating budget:", error);
+    throw error;
   }
 }
 

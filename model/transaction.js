@@ -8,14 +8,15 @@ const transactionSchema = new mongoose.Schema(
     note: { type: String, default: "" },
     status: { type: String, default: "Pending" },
     category: {
-      hexColor: { type: String, default: "#707070" },
+      _id: { type: String, required: true },
       name: { type: String, default: "Others" },
+      hexColor: { type: String, default: "#707070" },
       sign: { type: String, default: "-", enum: ["+", "-"] },
       type: {
         type: String,
         enum: ["Spent", "Earned", "Borrowed", "Lend"],
         default: "Spent",
-      }
+      },
     },
     transactor: { type: String },
     contactOfTransactor: { type: Number },
