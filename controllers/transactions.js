@@ -291,8 +291,8 @@ const checkAndPushReminder = async (req, res) => {
 
       if (isTwoDaysLater || isToday) {
         const notification = {
-          header: "Reminder for Recurring Transaction",
-          type: "Recurring",
+          header: "Reminder For You!!",
+          type: "Reminder",
           read: false,
           transaction: reminderTransaction,
         };

@@ -226,7 +226,7 @@ const checkAndAddRecuringTransactions = async (req, res) => {
                 };
 
                 const notification = {
-                    header: "",
+                    header: "Recurring Transaction Added!!",
                     type: "Recuring",
                     read: false,
                     transaction // total transaction
