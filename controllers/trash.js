@@ -1,4 +1,5 @@
 const User = require("../model/user");
+const Trash = require("../model/transaction");
 const Transaction = require('../model/transaction')
 
 async function getAllTrashs(req, res) {
@@ -85,4 +86,38 @@ async function emptyTrash(req, res) {
   }
 }
 
-module.exports = { getAllTrashs, deleteTrash, emptyTrash };
+const autoDeleteOlderThanWeek = async (req, res) => {
+  const { id: userId } = req.params;  
+
+  try {
+    // Find the user by userId
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    // Delete from the Trash model
+    await Trash.deleteMany({ createdAt: { $lt: oneWeekAgo } });
+
+    // Filter the user's trash array to remove transactions older than 7 days
+    user.trash = user.trash.filter((transaction) => {
+      const transactionDate = new Date(transaction.createdAt);
+      return transactionDate >= oneWeekAgo;
+      // Keep transactions newer than 7 days
+    });
+
+    user.markModified(`trash`);
+
+    await user.save();
+
+    res.status(200).json({ message: "Transactions older than 7 days deleted successfully.", });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error deleting transactions older than 7 days.", error });
+  }
+};
+
+module.exports = { getAllTrashs, deleteTrash, emptyTrash, autoDeleteOlderThanWeek };

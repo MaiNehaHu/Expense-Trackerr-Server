@@ -30,6 +30,9 @@ app.use("/api/transaction-image", transaction_img_route);
 const transh_route = require("./routes/trash");
 app.use("/api/trash", transh_route);
 
+const transh_older_than_week_route = require("./routes/trashOlderThanWeek");
+app.use("/api/older-than-week-trash", transh_older_than_week_route);
+
 const empty_transh_route = require("./routes/emptyTrash");
 app.use("/api/empty-trash", empty_transh_route);
 
