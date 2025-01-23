@@ -98,6 +98,9 @@ const autoDeleteOlderThanWeek = async (req, res) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
+    // Delete from the Transaction model
+    await Transaction.deleteMany({ createdAt: { $lt: oneWeekAgo } });
+
     user.trash = user.trash.filter((transaction) => {
       const transactionDate = new Date(transaction.createdAt);
       return transactionDate >= oneWeekAgo;
