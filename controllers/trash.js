@@ -1,5 +1,4 @@
 const User = require("../model/user");
-const Trash = require("../model/transaction");
 const Transaction = require('../model/transaction')
 
 async function getAllTrashs(req, res) {
@@ -99,10 +98,6 @@ const autoDeleteOlderThanWeek = async (req, res) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    // Delete from the Trash model
-    await Trash.deleteMany({ createdAt: { $lt: oneWeekAgo } });
-
-    // Filter the user's trash array to remove transactions older than 7 days
     user.trash = user.trash.filter((transaction) => {
       const transactionDate = new Date(transaction.createdAt);
       return transactionDate >= oneWeekAgo;
