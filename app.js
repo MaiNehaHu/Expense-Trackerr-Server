@@ -18,6 +18,9 @@ app.use("/api/users", users_route);
 const image_route = require("./routes/userImage");
 app.use("/api/user-image", image_route);
 
+const analyticss_route = require("./routes/analytics");
+app.use("/api/analytics", analyticss_route);
+
 const transactions_route = require("./routes/transactions");
 app.use("/api/transactions", transactions_route);
 
