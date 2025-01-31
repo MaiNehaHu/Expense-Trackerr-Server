@@ -220,7 +220,7 @@ const checkAndAddRecuringTransactions = async (req, res) => {
                     transactor: recuring.transactor,
                     contactOfTransactor: recuring.contactOfTransactor,
                     image: recuring.image,
-                    status: "Pending",
+                    status: "Done",
                     createdAt: new Date(),
                     _id: recuring._id,
                 };
