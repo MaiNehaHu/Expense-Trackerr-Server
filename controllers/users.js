@@ -6,7 +6,7 @@ function generateUniqueId() {
   const randomString1 = Math.random().toString(36).substring(2, 8);
   const randomString2 = Math.random().toString(36).substring(2, 8);
   const randomNumber = Math.floor(Math.random() * 100);
-  return `Exp-${randomString1}${randomNumber}${randomString2}`;
+  return `R-${randomString1}-u-${randomNumber}-p-${randomString2}-e`;
 }
 
 // Add a new user
