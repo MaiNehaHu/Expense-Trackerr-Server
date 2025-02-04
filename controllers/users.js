@@ -1,4 +1,5 @@
 const User = require("../model/user");
+const Category = require("../model/category");
 
 // Utility function to generate unique IDs
 function generateUniqueId() {
@@ -12,7 +13,20 @@ function generateUniqueId() {
 async function addUser(req, res) {
   try {
     const uniqueId = generateUniqueId();
-    const userData = { ...req.body, userId: uniqueId };
+
+    const defaultCategory = await Category.create({
+      hexColor: "#707070",
+      name: "Others",
+      sign: "-",
+      type: "Spent",
+    });
+
+    // Create the new user with the default category
+    const userData = {
+      ...req.body,
+      userId: uniqueId,
+      categories: [defaultCategory],
+    };
 
     const newUser = await User.create(userData);
     res.status(201).json(newUser);
@@ -56,11 +70,10 @@ async function editUser(req, res) {
     const { id } = req.params; // User's unique ID
     const updatedData = req.body; // Data to update
 
-    const user = await User.findOneAndUpdate(
-      { userId: id }, 
-      updatedData, 
-      { new: true, runValidators: true } 
-    );
+    const user = await User.findOneAndUpdate({ userId: id }, updatedData, {
+      new: true,
+      runValidators: true,
+    });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
