@@ -36,7 +36,7 @@ const getAnalytics = async (req, res) => {
 
     res
       .status(200)
-      .json({ totalSpent, totalEarned, totalAmount: totalEarned - totalSpent });
+      .json({ totalSpent, totalEarned, totalAmount: totalEarned + totalSpent, balance: totalEarned - totalSpent });
   } catch (error) {
     res.status(500).json({ message: "Error getting analytics", error });
   }
