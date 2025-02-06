@@ -181,4 +181,50 @@ async function deleteImage(req, res) {
   }
 }
 
-module.exports = { deleteImage, uploadImage, handleImageUpload };
+const handleOnlyImageUpload = async (req, res) => {
+  try {
+    const imageURL = req.file.location;
+
+    res.status(200).json({
+      message: "Image uploaded successfully to transaction",
+      image: imageURL
+    });
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    res.status(500).json({ error: "Failed to upload image", error });
+  }
+};
+
+async function deleteOnlyImage(req, res) {
+  try {
+    const { imageURL } = req.query;
+
+    if (!imageURL) {
+      return res.status(400).json({ error: "Image URL is required." });
+    }
+
+    // Extract the image key from the URL
+    const imageKey = imageURL.includes("amazonaws.com")
+      ? imageURL.split("/").pop()
+      : imageURL;
+
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: imageKey,
+    };
+
+    // Delete the image from S3
+    await s3.deleteObject(params).promise();
+    console.log("Image deleted successfully from AWS S3.");
+
+
+    res.status(200).json({
+      message: "Image deleted successfully from transaction.",
+    });
+  } catch (error) {
+    console.error("Error deleting image:", error);
+    res.status(500).json({ error: "Failed to delete image", error });
+  }
+}
+
+module.exports = { deleteImage, uploadImage, handleImageUpload, handleOnlyImageUpload, deleteOnlyImage };

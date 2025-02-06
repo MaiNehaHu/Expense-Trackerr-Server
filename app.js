@@ -30,6 +30,9 @@ app.use("/api/recuring-transactions", recuring_transactions_route);
 const transaction_img_route = require("./routes/transactionImage");
 app.use("/api/transaction-image", transaction_img_route);
 
+const img_only_route = require("./routes/imageOnly");
+app.use("/api/only-image", img_only_route);
+
 const transh_route = require("./routes/trash");
 app.use("/api/trash", transh_route);
 
