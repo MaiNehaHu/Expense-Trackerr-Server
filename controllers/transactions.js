@@ -159,7 +159,7 @@ async function getAllTransactions(req, res) {
 // Edit a transaction
 async function editTransaction(req, res) {
   const { id: userId, transactionId } = req.params;
-  const { amount, note, status, transactor, contactOfTransactor, image, reminder, category } = req.body;
+  const { amount, note, status, transactor, contactOfTransactor, image, reminder, category, createdAt } = req.body;
 
   try {
     // Find the user by userId
@@ -183,6 +183,7 @@ async function editTransaction(req, res) {
     if (image !== undefined) transaction.image = image;
     if (reminder !== undefined) transaction.reminder = reminder;
     if (category !== undefined) transaction.category = category;
+    if (createdAt !== undefined) transaction.createdAt = createdAt;
 
     // Mark the transactions field as modified
     user.markModified('transactions');
