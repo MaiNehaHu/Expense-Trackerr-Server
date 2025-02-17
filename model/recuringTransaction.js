@@ -23,16 +23,9 @@ const recuringTransactionSchema = new mongoose.Schema(
           },
         },
         everyWeek: {
-          type: String,
-          enum: [
-            "Sunday",
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday",
-          ],
+          type: Number,
+          min: 0, // sunday
+          max: 6, // saturday
         },
         everyMonth: {
           type: Number,
