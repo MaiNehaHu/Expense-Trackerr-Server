@@ -41,21 +41,9 @@ const recuringTransactionSchema = new mongoose.Schema(
         },
         everyYear: {
           month: {
-            type: String,
-            enum: [
-              "January",
-              "February",
-              "March",
-              "April",
-              "May",
-              "June",
-              "July",
-              "August",
-              "September",
-              "October",
-              "November",
-              "December",
-            ],
+            type: Number,
+            min: 1,
+            max: 31,
           },
           date: {
             type: Number,
