@@ -343,7 +343,7 @@ const checkAndAddRecuringTransactions = async (req, res) => {
     if (recurringAdded) {
       res
         .status(200)
-        .json({ message: "Recurring Transactions Processed Successfully" });
+        .json({ message: "Recurring Transactions Processed Successfully For: ", when});
     } else {
       res
         .status(200)
