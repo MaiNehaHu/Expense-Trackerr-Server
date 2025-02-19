@@ -1,6 +1,21 @@
 const User = require("../model/user");
 const Transaction = require('../model/transaction')
 
+const BUCKET_NAME = process.env.BUCKET_NAME;
+const aws = require("aws-sdk");
+const s3 = new aws.S3();
+const path = require("path");
+const multer = require("multer");
+const multerS3 = require("multer-s3");
+const User = require("../model/user");
+
+aws.config.update({
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  apiVersion: "latest",
+  region: process.env.REGION,
+});
+
 async function getAllTrashs(req, res) {
   const { id: userId } = req.params;
 
@@ -20,7 +35,7 @@ async function getAllTrashs(req, res) {
 }
 
 async function deleteTrash(req, res) {
-  const { id: userId, trashTransactionId } = req.params;
+  const { id: userId, trashTransactionId, imageURL } = req.params;
 
   try {
     // Find the user by userId
@@ -29,29 +44,43 @@ async function deleteTrash(req, res) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if the transaction exists in the trash
+    // Find the transaction in the trash array
     const trashIndex = user.trash.findIndex((txn) => txn._id.toString() === trashTransactionId);
     if (trashIndex === -1) {
       return res.status(404).json({ message: "Transaction not found in trash" });
     }
 
-    // Remove the transaction from the trash array
-    user.trash.splice(trashIndex, 1);
+    // Extract the image key from the URL if provided
+    if (imageURL) {
+      const imageKey = imageURL.includes("amazonaws.com")
+        ? imageURL.split("/").pop()
+        : imageURL;
+
+      const params = {
+        Bucket: BUCKET_NAME,
+        Key: imageKey,
+      };
+
+      // Delete the image from AWS S3
+      await s3.deleteObject(params).promise();
+      console.log("Transaction image deleted from AWS S3.");
+    }
+
+    // Remove the transaction from the user's trash array
+    const deletedTransaction = user.trash.splice(trashIndex, 1)[0];
 
     // Save the updated user data
     await user.save();
 
-    // Get the transaction ID to delete from the transactions database
-    const transactionId = user.trash[trashIndex]._id;
-
-    // Delete the transaction from the transactions database
-    await Transaction.findByIdAndDelete(transactionId);
+    // Delete the transaction from the database
+    await Transaction.findByIdAndDelete(deletedTransaction._id);
 
     // Respond with success message
     res.status(200).json({ message: "Transaction deleted from trash and database successfully" });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error deleting transaction from trash and database", error });
+    console.error("Error deleting transaction:", error);
+    res.status(500).json({ message: "Error deleting transaction", error });
   }
 }
 
@@ -86,7 +115,7 @@ async function emptyTrash(req, res) {
 }
 
 const autoDeleteOlderThanWeek = async (req, res) => {
-  const { id: userId } = req.params;  
+  const { id: userId } = req.params;
 
   try {
     // Find the user by userId
