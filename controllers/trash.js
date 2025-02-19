@@ -1,5 +1,5 @@
 const User = require("../model/user");
-const Transaction = require('../model/transaction')
+const Trash = require('../model/trash')
 
 const BUCKET_NAME = process.env.BUCKET_NAME;
 const aws = require("aws-sdk");
@@ -73,7 +73,7 @@ async function deleteTrash(req, res) {
     await user.save();
 
     // Delete the transaction from the database
-    await Transaction.findByIdAndDelete(deletedTransaction._id);
+    await Trash.findByIdAndDelete(deletedTransaction._id);
 
     // Respond with success message
     res.status(200).json({ message: "Transaction deleted from trash and database successfully" });
@@ -99,7 +99,7 @@ async function emptyTrash(req, res) {
     const transactionIds = user.trash.map((txn) => txn._id);
 
     // Delete the transactions from the transactions database
-    await Transaction.deleteMany({ _id: { $in: transactionIds } });
+    await Trash.deleteMany({ _id: { $in: transactionIds } });
 
     // Clear the trash array in the user's data
     user.trash = [];
@@ -128,7 +128,7 @@ const autoDeleteOlderThanWeek = async (req, res) => {
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
     // Delete from the Transaction model
-    await Transaction.deleteMany({ createdAt: { $lt: oneWeekAgo } });
+    await Trash.deleteMany({ createdAt: { $lt: oneWeekAgo } });
 
     user.trash = user.trash.filter((transaction) => {
       const transactionDate = new Date(transaction.createdAt);

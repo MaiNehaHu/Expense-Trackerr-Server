@@ -238,7 +238,9 @@ async function deleteTransaction(req, res) {
 
     // Add the entire transaction object to the trash array
     user.trash = user.trash || [];
-    user.trash.push(removedTransaction);
+
+    // Convert to plain object if using Mongoose
+    user.trash.push({ ...removedTransaction.toObject(), deletedAt: new Date().toISOString() });
 
     // Save the updated user data
     await user.save();
