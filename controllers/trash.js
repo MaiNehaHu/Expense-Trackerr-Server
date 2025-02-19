@@ -95,11 +95,26 @@ async function emptyTrash(req, res) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Extract transaction IDs from the trash
+    // Extract transaction IDs and image keys from the trash
     const transactionIds = user.trash.map((txn) => txn._id);
+    const imageKeys = user.trash
+      .map((txn) => txn.image) // Accessing txn.image directly
+      .filter((key) => key); // Remove undefined or null values
 
-    // Delete the transactions from the transactions database
-    await Trash.deleteMany({ _id: { $in: transactionIds } });
+    // Delete images from S3
+    if (imageKeys.length > 0) {
+      const deleteParams = {
+        Bucket: BUCKET_NAME,
+        Delete: {
+          Objects: imageKeys.map((key) => ({ Key: key })),
+        },
+      };
+      await s3.deleteObjects(deleteParams).promise();
+      console.log("All trash images deleted from S3");
+    }
+
+    // Delete the transactions from the database
+    await Transaction.deleteMany({ _id: { $in: transactionIds } });
 
     // Clear the trash array in the user's data
     user.trash = [];
@@ -107,9 +122,9 @@ async function emptyTrash(req, res) {
     // Save the updated user data
     await user.save();
 
-    res.status(200).json({ message: "Trash emptied successfully and transactions deleted" });
+    res.status(200).json({ message: "Trash emptied successfully, images deleted, and transactions removed" });
   } catch (error) {
-    console.error(error);
+    console.error("Error emptying trash:", error);
     res.status(500).json({ message: "Error emptying trash and deleting transactions", error });
   }
 }
