@@ -34,7 +34,8 @@ async function getAllTrashs(req, res) {
 }
 
 async function deleteTrash(req, res) {
-  const { id: userId, trashTransactionId, imageURL } = req.params;
+  const { id: userId, trashTransactionId } = req.params;
+  const { imageURL } = req.query;
 
   try {
     // Find the user by userId
