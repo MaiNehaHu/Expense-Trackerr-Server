@@ -7,7 +7,7 @@ const { getAllTrashs, deleteTrash, autoDeleteOlderThanWeek } = require('../contr
 // Route to get all posts
 router.route('/:id').get(getAllTrashs)
 
-router.route('/:id/:trashTransactionId').delete(deleteTrash)
+router.route('/:id/:trashTransactionId/:imageURL').delete(deleteTrash)
 
 router.route('/older-than-week/:id').delete(autoDeleteOlderThanWeek)
 
