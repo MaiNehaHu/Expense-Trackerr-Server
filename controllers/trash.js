@@ -101,20 +101,23 @@ async function emptyTrash(req, res) {
       .map((txn) => txn.image) // Accessing txn.image directly
       .filter((key) => key); // Remove undefined or null values
 
-    // Delete images from S3
-    if (imageKeys.length > 0) {
-      const deleteParams = {
-        Bucket: BUCKET_NAME,
-        Delete: {
-          Objects: imageKeys.map((key) => ({ Key: key })),
-        },
-      };
-      await s3.deleteObjects(deleteParams).promise();
-      console.log("All trash images deleted from S3");
-    }
+    // Delete the transactions from the transactions database
+    await Trash.deleteMany({ _id: { $in: transactionIds } });
 
-    // Delete the transactions from the database
-    await Transaction.deleteMany({ _id: { $in: transactionIds } });
+    // // Delete images from S3
+    // if (imageKeys.length > 0) {
+    //   const deleteParams = {
+    //     Bucket: BUCKET_NAME,
+    //     Delete: {
+    //       Objects: imageKeys.map((key) => ({ Key: key })),
+    //     },
+    //   };
+    //   await s3.deleteObjects(deleteParams).promise();
+    //   console.log("All trash images deleted from S3");
+    // }
+
+    // // Delete the transactions from the database
+    // await Trash.deleteMany({ _id: { $in: transactionIds } });
 
     // Clear the trash array in the user's data
     user.trash = [];
@@ -142,24 +145,75 @@ const autoDeleteOlderThanWeek = async (req, res) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    // Delete from the Transaction model
-    await Trash.deleteMany({ createdAt: { $lt: oneWeekAgo } });
-
-    user.trash = user.trash.filter((transaction) => {
-      const transactionDate = new Date(transaction.createdAt);
-      return transactionDate >= oneWeekAgo;
-      // Keep transactions newer than 7 days
+    // Filter out transactions older than a week
+    const oldTransactions = user.trash.filter((transaction) => {
+      return new Date(transaction.createdAt) < oneWeekAgo;
     });
 
-    user.markModified(`trash`);
+    // Delete images from S3
+    for (const txn of oldTransactions) {
+      if (txn.image) {
+        const imageKey = txn.image.split("/").pop(); // Extract image key from URL
+        const params = {
+          Bucket: BUCKET_NAME,
+          Key: imageKey,
+        };
+        await s3.deleteObject(params).promise();
+        console.log(`Deleted image: ${imageKey}`);
+      }
+    }
+
+    // Delete transactions from the database
+    await Transaction.deleteMany({ _id: { $in: oldTransactions.map(txn => txn._id) } });
+
+    // Remove the old transactions from user's trash
+    user.trash = user.trash.filter(txn => new Date(txn.createdAt) >= oneWeekAgo);
+    user.markModified("trash");
 
     await user.save();
 
-    res.status(200).json({ message: "Transactions older than 7 days deleted successfully.", });
+    res.status(200).json({ message: "Transactions and their images older than 7 days deleted successfully." });
   } catch (error) {
-    console.error(error);
+    console.error("Error deleting old transactions:", error);
     res.status(500).json({ message: "Error deleting transactions older than 7 days.", error });
   }
 };
 
-module.exports = { getAllTrashs, deleteTrash, emptyTrash, autoDeleteOlderThanWeek };
+
+const revertBack = async (req, res) => {
+  const { id: userId, trashTransactionId } = req.params;
+
+  try {
+    // Find the user
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find the transaction in trash
+    const transactionIndex = user.trash.findIndex(txn => txn._id.toString() === trashTransactionId);
+    if (transactionIndex === -1) {
+      return res.status(404).json({ message: "Transaction not found in trash" });
+    }
+
+    // Retrieve the transaction
+    const transactionToRestore = user.trash[transactionIndex];
+
+    // Add the transaction back to user.transactions
+    user.transactions.push(transactionToRestore);
+
+    // Remove the transaction from user's trash
+    user.trash.splice(transactionIndex, 1);
+    user.markModified("trash");
+    user.markModified("transactions");
+
+    await user.save();
+
+    res.status(200).json({ message: "Transaction restored successfully", transactionToRestore });
+  } catch (error) {
+    console.error("Error reverting transaction:", error);
+    res.status(500).json({ message: "Error reverting transaction", error });
+  }
+};
+
+module.exports = { getAllTrashs, deleteTrash, emptyTrash, autoDeleteOlderThanWeek, revertBack };
