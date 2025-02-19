@@ -240,7 +240,7 @@ async function deleteTransaction(req, res) {
     user.trash = user.trash || [];
 
     // Convert to plain object if using Mongoose
-    user.trash.push({ ...removedTransaction.toObject(), deletedAt: new Date().toISOString() });
+    user.trash.push({ ...removedTransaction, deletedAt: new Date().toISOString() });
 
     // Save the updated user data
     await user.save();
