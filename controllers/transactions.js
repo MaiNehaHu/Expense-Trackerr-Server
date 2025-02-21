@@ -214,6 +214,49 @@ async function editTransaction(req, res) {
   }
 }
 
+async function editRecurringTransaction(req, res) {
+  const { id: userId, transactionId } = req.params;
+  const { amount, note, status, transactor, contactOfTransactor, image, reminded, reminder, category, createdAt, frequency, endDate } = req.body;
+
+  try {
+    // Find the user by userId
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Locate the transaction in the user's transactions
+    const transaction = user.transactions.find((txn) => txn._id.toString() === transactionId);
+    if (!transaction) {
+      return res.status(404).json({ message: "Transaction not found in user's records" });
+    }
+
+    // Update transaction fields in the user's transactions
+    if (amount !== undefined) transaction.amount = amount;
+    if (note !== undefined) transaction.note = note;
+    if (status !== undefined) transaction.status = status;
+    if (transactor !== undefined) transaction.transactor = transactor;
+    if (contactOfTransactor !== undefined) transaction.contactOfTransactor = contactOfTransactor;
+    if (image !== undefined) transaction.image = image;
+    if (reminder !== undefined) transaction.reminder = reminder;
+    if (reminded !== undefined) transaction.reminded = reminded;
+    if (category !== undefined) transaction.category = category;
+    if (createdAt !== undefined) transaction.createdAt = createdAt;
+
+    // Mark the transactions field as modified
+    user.markModified('transactions');
+
+    // Save the updated user data
+    await user.save();
+
+    // Respond with the updated recurring transaction
+    res.status(200).json({ message: "Recurring transaction updated successfully", transaction });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating recurring transaction", error });
+  }
+}
+
 // Delete a transaction (move to trash)
 async function deleteTransaction(req, res) {
   const { id: userId, transactionId } = req.params;
@@ -336,4 +379,11 @@ const checkAndPushReminder = async (req, res) => {
   }
 };
 
-module.exports = { addTransaction, getAllTransactions, editTransaction, deleteTransaction, checkAndPushReminder };
+module.exports = {
+  addTransaction,
+  getAllTransactions,
+  editTransaction,
+  editRecurringTransaction,
+  deleteTransaction,
+  checkAndPushReminder
+};
