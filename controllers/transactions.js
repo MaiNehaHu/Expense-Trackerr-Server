@@ -216,7 +216,7 @@ async function editTransaction(req, res) {
 
 async function editRecurringTransaction(req, res) {
   const { id: userId, transactionId } = req.params;
-  const { amount, note, status, transactor, contactOfTransactor, image, reminded, reminder, category, createdAt, frequency, endDate } = req.body;
+  const { read, header, type } = req.body;
 
   try {
     // Find the user by userId
@@ -226,25 +226,18 @@ async function editRecurringTransaction(req, res) {
     }
 
     // Locate the transaction in the user's transactions
-    const transaction = user.transactions.find((txn) => txn._id.toString() === transactionId);
+    const transaction = user.notifications.find((txn) => txn.transaction._id.toString() === transactionId);
     if (!transaction) {
       return res.status(404).json({ message: "Transaction not found in user's records" });
     }
 
-    // Update transaction fields in the user's transactions
-    if (amount !== undefined) transaction.amount = amount;
-    if (note !== undefined) transaction.note = note;
-    if (status !== undefined) transaction.status = status;
-    if (transactor !== undefined) transaction.transactor = transactor;
-    if (contactOfTransactor !== undefined) transaction.contactOfTransactor = contactOfTransactor;
-    if (image !== undefined) transaction.image = image;
-    if (reminder !== undefined) transaction.reminder = reminder;
-    if (reminded !== undefined) transaction.reminded = reminded;
-    if (category !== undefined) transaction.category = category;
-    if (createdAt !== undefined) transaction.createdAt = createdAt;
+    // Update transaction fields in the user's notifications
+    if (read !== undefined) transaction.read = read;
+    if (header !== undefined) transaction.header = header;
+    if (type !== undefined) transaction.type = type;
 
-    // Mark the transactions field as modified
-    user.markModified('transactions');
+    // Mark the notifications field as modified
+    user.markModified('notifications');
 
     // Save the updated user data
     await user.save();
