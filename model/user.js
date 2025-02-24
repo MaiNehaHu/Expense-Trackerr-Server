@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema(
       type: [Object],
       required: true,
     },
+    people: {
+      type: [Object],
+      required: true,
+    },
     notifications: {
       type: [Object],
       required: true,

@@ -45,6 +45,9 @@ app.use("/api/empty-trash", empty_transh_route);
 const categories_route = require("./routes/category");
 app.use("/api/categories", categories_route);
 
+const people_route = require("./routes/people");
+app.use("/api/people", people_route);
+
 const notifications_route = require("./routes/notifications");
 app.use("/api/notifications", notifications_route);
 

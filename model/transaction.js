@@ -18,6 +18,10 @@ const transactionSchema = new mongoose.Schema(
         default: "Spent",
       },
     },
+    people: {
+      name: { type: String },
+      contact: { type: Number }
+    },
     transactor: { type: String },
     contactOfTransactor: { type: Number },
     image: { type: String },
