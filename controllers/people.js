@@ -3,19 +3,19 @@ const User = require('../model/user');
 
 async function addPerson(req, res) {
     const { id: userId } = req.params;
-    const { name, contact, relation } = req.body;
+    const { name, contact, } = req.body;
 
     try {
         const user = await User.findOne({ userId });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        if (!name || !contact || !relation) {
+        if (!name || !contact) {
             return res.status(404).json({ message: "Passing Data is Mandatory" });
         }
 
         // Create new Person
-        const newPerson = new People({ name, contact, relation });
+        const newPerson = new People({ name, contact, });
         const savedPerson = await newPerson.save();
 
         // Add Person to user's people
@@ -49,13 +49,13 @@ async function getAllPeople(req, res) {
 // Get a user by their unique ID
 async function editPerson(req, res) {
     const { id: userId, personId } = req.params;
-    const { name, contact, relation } = req.body;
+    const { name, contact, } = req.body;
 
     try {
         // Update Person in the Person collection
         const updatedPerson = await People.findByIdAndUpdate(
             personId,
-            { name, contact, relation },
+            { name, contact, },
             { new: true } // Return the updated document
         );
 
