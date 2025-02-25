@@ -59,8 +59,11 @@ const recuringTransactionSchema = new mongoose.Schema(
         default: "Spent",
       },
     },
-    transactor: { type: String },
-    contactOfTransactor: { type: Number },
+    people: {
+      name: { type: String },
+      contact: { type: Number },
+      relation: { type: String }
+    },
     image: { type: String },
     reminder: { type: Date },
     reminded: { type: Boolean, default: false },

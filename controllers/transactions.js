@@ -7,7 +7,7 @@ const moment = require("moment");
 // Add a transaction
 async function addTransaction(req, res) {
   const { id: userId } = req.params;
-  const { amount, note, category, transactor, contactOfTransactor, image, reminder } = req.body;
+  const { amount, note, category, people, image, reminder } = req.body;
 
   try {
     // Find the user by userId
@@ -21,8 +21,7 @@ async function addTransaction(req, res) {
       amount,
       note,
       category,
-      transactor,
-      contactOfTransactor,
+      people,
       image,
       reminder,
     });
@@ -159,7 +158,7 @@ async function getAllTransactions(req, res) {
 // Edit a transaction
 async function editTransaction(req, res) {
   const { id: userId, transactionId } = req.params;
-  const { amount, note, status, transactor, contactOfTransactor, image, reminder, category, createdAt } = req.body;
+  const { amount, note, status, people, image, reminder, category, createdAt } = req.body;
 
   try {
     // Find the user by userId
@@ -178,8 +177,7 @@ async function editTransaction(req, res) {
     if (amount !== undefined) transaction.amount = amount;
     if (note !== undefined) transaction.note = note;
     if (status !== undefined) transaction.status = status;
-    if (transactor !== undefined) transaction.transactor = transactor;
-    if (contactOfTransactor !== undefined) transaction.contactOfTransactor = contactOfTransactor;
+    if (people !== undefined) transaction.people = people;
     if (image !== undefined) transaction.image = image;
     if (reminder !== undefined) transaction.reminder = reminder;
     if (category !== undefined) transaction.category = category;
@@ -196,7 +194,7 @@ async function editTransaction(req, res) {
       transactionId,
       {
         $set: {
-          amount, note, status, transactor, contactOfTransactor, image, reminder, category,
+          amount, note, status, people, image, reminder, category,
         },
       },
       { new: true } // Return the updated document

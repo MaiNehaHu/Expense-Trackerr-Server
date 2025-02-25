@@ -20,10 +20,9 @@ const transactionSchema = new mongoose.Schema(
     },
     people: {
       name: { type: String },
-      contact: { type: Number }
+      contact: { type: Number },
+      relation: { type: String }
     },
-    transactor: { type: String },
-    contactOfTransactor: { type: Number },
     image: { type: String },
     reminder: { type: Date },
     reminded: { type: Boolean }

@@ -28,8 +28,7 @@ async function addRecuringTransactions(req, res) {
     amount,
     note,
     category,
-    transactor,
-    contactOfTransactor,
+    people,
     image,
     reminder,
   } = req.body;
@@ -49,8 +48,7 @@ async function addRecuringTransactions(req, res) {
       amount,
       note,
       category,
-      transactor,
-      contactOfTransactor,
+      people,
       image,
       reminder,
     });
@@ -121,8 +119,7 @@ async function editRecuringTransactions(req, res) {
     amount,
     note,
     status,
-    transactor,
-    contactOfTransactor,
+    people,
     image,
     reminder,
     category,
@@ -158,12 +155,10 @@ async function editRecuringTransactions(req, res) {
     if (amount !== undefined) updatedFields.amount = amount;
     if (note !== undefined) updatedFields.note = note;
     if (status !== undefined) updatedFields.status = status;
-    if (transactor !== undefined) updatedFields.transactor = transactor;
-    if (contactOfTransactor !== undefined)
-      updatedFields.contactOfTransactor = contactOfTransactor;
     if (image !== undefined) updatedFields.image = image;
     if (reminder !== undefined) updatedFields.reminder = reminder;
     if (category !== undefined) updatedFields.category = category;
+    if (people !== undefined) updatedFields.people = people;
 
     // Update the transaction in the `RecuringTransaction` database
     const updatedTransaction = await RecuringTransaction.findByIdAndUpdate(
@@ -271,8 +266,7 @@ const checkAndAddRecuringTransactions = async (req, res) => {
           amount: recuring.amount,
           note: recuring.note,
           category: recuring.category,
-          transactor: recuring.transactor,
-          contactOfTransactor: recuring.contactOfTransactor,
+          people: recuring.people,
           image: recuring.image,
           status: "Done",
           createdAt: new Date(),
