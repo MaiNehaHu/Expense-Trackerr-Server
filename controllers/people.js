@@ -3,7 +3,7 @@ const User = require('../model/user');
 
 async function addPerson(req, res) {
     const { id: userId } = req.params;
-    const { name, contact } = req.body;
+    const { name, contact, relation } = req.body;
 
     try {
         const user = await User.findOne({ userId });
@@ -11,8 +11,18 @@ async function addPerson(req, res) {
             return res.status(404).json({ message: "User not found" });
         }
 
+        if (!name) {
+            return res.status(404).json({ message: "Enter Name" });
+        }
+        if (!contact) {
+            return res.status(404).json({ message: "Enter Contact" });
+        }
+        if (!relation) {
+            return res.status(404).json({ message: "Enter Relation" });
+        }
+
         // Create new Person
-        const newPerson = new People({ name, contact });
+        const newPerson = new People({ name, contact, relation });
         const savedPerson = await newPerson.save();
 
         // Add Person to user's people
@@ -46,13 +56,13 @@ async function getAllPeople(req, res) {
 // Get a user by their unique ID
 async function editPerson(req, res) {
     const { id: userId, personId } = req.params;
-    const { name, contact } = req.body;
+    const { name, contact, relation } = req.body;
 
     try {
         // Update Person in the Person collection
         const updatedPerson = await People.findByIdAndUpdate(
             personId,
-            { name, contact },
+            { name, contact, relation },
             { new: true } // Return the updated document
         );
 
