@@ -30,9 +30,9 @@ const budgetSchema = new mongoose.Schema(
         categories: [
             {
                 name: { type: String, default: "Others", required: true },
-                budget: { type: Number, required: true },
-                included: { type: Boolean, required: true, default: true, enum: [true, false] },
+                budget: { type: Number, default: 0 },
                 spent: { type: Number, default: 0 },
+                included: { type: Boolean, required: true, default: true, enum: [true, false] },
                 hexColor: { type: String, default: "#707070", required: true },
                 sign: { type: String, default: "-", enum: ["+", "-"] },
                 type: {
