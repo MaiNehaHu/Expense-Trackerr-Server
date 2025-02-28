@@ -62,7 +62,7 @@ async function updateBudgetWithTransaction(transaction, userId) {
       ],
     };
 
-    // Find all matching budgets in the Budget model
+    // Find all matching budgets
     const budgets = await Budget.find(budgetQuery);
 
     if (!budgets || budgets.length === 0) {
@@ -74,28 +74,24 @@ async function updateBudgetWithTransaction(transaction, userId) {
       budget.totalSpent = (budget.totalSpent || 0) + transaction.amount;
 
       const categoryIndex = budget.categories.findIndex(
-        (cat) => cat.category._id.toString() === transaction.category._id.toString()
+        (cat) => cat._id.toString() === transaction.category._id.toString()
       );
 
       if (categoryIndex !== -1) {
-        budget.categories[categoryIndex].spent =
-          (budget.categories[categoryIndex].spent || 0) + transaction.amount;
+        // Update existing category spent amount
+        budget.categories[categoryIndex].spent += transaction.amount;
+        budget.markModified(`categories.${categoryIndex}`);
       } else {
-        budget.categories.push({
-          budget: 0,
-          spent: transaction.amount,
-          category: transaction.category,
-        });
+        return res.status(404).json({ message: "Category not found" });
       }
 
       budget.markModified("totalSpent");
-      budget.markModified(`categories.${categoryIndex}`);
       await budget.save();
     }
 
     console.log("Budgets updated successfully in the Budget model.");
 
-    // Update the budgets in the User model (user.budgets)
+    // Update User model budgets
     const user = await User.findOne({ userId });
     if (!user) {
       console.log("User not found for updating budgets.");
@@ -123,9 +119,7 @@ async function updateBudgetWithTransaction(transaction, userId) {
         user.budgets[userBudgetIndex] = budget;
         user.markModified(`budgets.${userBudgetIndex}`);
       } else {
-        console.log(
-          `No matching budget found in the user's budgets array for ${budget.type}.`
-        );
+        console.log(`No matching budget found in the user's budgets array.`);
       }
     }
 
