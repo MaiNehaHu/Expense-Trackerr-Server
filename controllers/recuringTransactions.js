@@ -215,8 +215,8 @@ const checkAndAddRecuringTransactions = async (req, res) => {
     const currentWeekName = currentDate.toLocaleDateString("en-US", {
       weekday: "long",
     });
-    const currentMonthName = currentDate.toLocaleDateString("en-US", {
-      month: "long",
+    const currentMonth = currentDate.toLocaleDateString("en-US", {
+      month: "numeric",
     });
     let recurringAdded = false;
 
@@ -249,13 +249,13 @@ const checkAndAddRecuringTransactions = async (req, res) => {
           break;
         case "Every year":
           shouldAdd =
-            when.everyYear.month === currentMonthName &&
+            when.everyYear.month === Number(currentMonth) &&
             when.everyYear.date === currentDayOfMonth;
           console.log(
             when.everyYear.month,
             when.everyYear.date,
             "<-->",
-            currentMonthName,
+            Number(currentMonth),
             currentDayOfMonth
           );
           break;
@@ -315,8 +315,7 @@ const checkAndAddRecuringTransactions = async (req, res) => {
 
           if (result.modifiedCount > 0) {
             console.log(
-              `Transaction pushed and pushedCount incremented to: ${
-                recuring.pushedCount + 1
+              `Transaction pushed and pushedCount incremented to: ${recuring.pushedCount + 1
               }`
             );
           } else {
@@ -337,7 +336,7 @@ const checkAndAddRecuringTransactions = async (req, res) => {
     if (recurringAdded) {
       res
         .status(200)
-        .json({ message: "Recurring Transactions Processed Successfully For: ", when});
+        .json({ message: "Recurring Transactions Processed Successfully For: ", when });
     } else {
       res
         .status(200)

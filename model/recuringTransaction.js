@@ -23,9 +23,7 @@ const recuringTransactionSchema = new mongoose.Schema(
           },
         },
         everyWeek: {
-          type: Number,
-          min: 0, // sunday
-          max: 6, // saturday
+          type: String,
         },
         everyMonth: {
           type: Number,
