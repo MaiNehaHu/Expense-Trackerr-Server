@@ -35,7 +35,7 @@ async function getAllTrashs(req, res) {
 
 async function deleteTrash(req, res) {
   const { id: userId, trashTransactionId } = req.params;
-  const { imageURL } = req.query;
+  // const { imageURL } = req.query;
 
   try {
     // Find the user by userId
@@ -51,20 +51,20 @@ async function deleteTrash(req, res) {
     }
 
     // Extract the image key from the URL if provided
-    if (imageURL) {
-      const imageKey = imageURL.includes("amazonaws.com")
-        ? imageURL.split("/").pop()
-        : imageURL;
+    // if (imageURL) {
+    //   const imageKey = imageURL.includes("amazonaws.com")
+    //     ? imageURL.split("/").pop()
+    //     : imageURL;
 
-      const params = {
-        Bucket: BUCKET_NAME,
-        Key: imageKey,
-      };
+    //   const params = {
+    //     Bucket: BUCKET_NAME,
+    //     Key: imageKey,
+    //   };
 
-      // Delete the image from AWS S3
-      await s3.deleteObject(params).promise();
-      console.log("Transaction image deleted from AWS S3.");
-    }
+    //   // Delete the image from AWS S3
+    //   await s3.deleteObject(params).promise();
+    //   console.log("Transaction image deleted from AWS S3.");
+    // }
 
     // Remove the transaction from the user's trash array
     const deletedTransaction = user.trash.splice(trashIndex, 1)[0];
