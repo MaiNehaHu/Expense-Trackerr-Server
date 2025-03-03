@@ -152,7 +152,7 @@ async function getAllTransactions(req, res) {
 // Edit a transaction
 async function editTransaction(req, res) {
   const { id: userId, transactionId } = req.params;
-  const { amount, note, status, people, image, reminder, category, createdAt } = req.body;
+  const { amount, note, status, people, image, category, createdAt, reminded } = req.body;
 
   try {
     // Find the user by userId
@@ -173,22 +173,29 @@ async function editTransaction(req, res) {
     if (status !== undefined) transaction.status = status;
     if (people !== undefined) transaction.people = people;
     if (image !== undefined) transaction.image = image;
-    if (reminder !== undefined) transaction.reminder = reminder;
     if (category !== undefined) transaction.category = category;
     if (createdAt !== undefined) transaction.createdAt = createdAt;
 
     // Mark the transactions field as modified
-    user.markModified('transactions');
+    user.markModified("transactions");
 
     // Save the updated user data
     await user.save();
+
+    // If "reminded" is present, skip updating the Transaction model
+    if (reminded !== undefined) {
+      return res.status(200).json({
+        message: "Transaction updated successfully in User model (Reminder update only)",
+        transaction
+      });
+    }
 
     // Update the transaction in the Transaction model
     const updatedTransaction = await Transaction.findByIdAndUpdate(
       transactionId,
       {
         $set: {
-          amount, note, status, people, image, reminder, category,
+          amount, note, status, people, image, category,
         },
       },
       { new: true } // Return the updated document

@@ -270,7 +270,7 @@ const checkAndAddRecuringTransactions = async (req, res) => {
           image: recuring.image,
           status: "Done",
           createdAt: new Date(),
-          reminded: recuring.reminded,
+          reminded: true,
           _id: recuring._id,
         };
 

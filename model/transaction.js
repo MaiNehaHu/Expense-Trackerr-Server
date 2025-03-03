@@ -24,7 +24,6 @@ const transactionSchema = new mongoose.Schema(
       relation: { type: String }
     },
     image: { type: String },
-    reminder: { type: Date },
     reminded: { type: Boolean }
   },
   { timestamps: true }
