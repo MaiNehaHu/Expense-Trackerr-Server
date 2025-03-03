@@ -175,6 +175,7 @@ async function editTransaction(req, res) {
     if (image !== undefined) transaction.image = image;
     if (category !== undefined) transaction.category = category;
     if (createdAt !== undefined) transaction.createdAt = createdAt;
+    if (reminded !== undefined) transaction.reminded = reminded;
 
     // Mark the transactions field as modified
     user.markModified("transactions");
