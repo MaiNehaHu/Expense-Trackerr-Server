@@ -64,7 +64,7 @@ async function getAllTransactions(req, res) {
 // Edit a transaction
 async function editTransaction(req, res) {
   const { id: userId, transactionId } = req.params;
-  const { amount, note, status, people, image, category, createdAt, pushedIntoTransactions } = req.body;
+  const { amount, note, status, people, image, category, createdAt } = req.body;
 
   try {
     // Find the user by userId
@@ -79,7 +79,54 @@ async function editTransaction(req, res) {
       return res.status(404).json({ message: "Transaction not found in user's records" });
     }
 
-    // Update transaction fields in the user's transactions
+    // Update all transaction fields
+    if (amount !== undefined) transaction.amount = amount;
+    if (note !== undefined) transaction.note = note;
+    if (status !== undefined) transaction.status = status;
+    if (people !== undefined) transaction.people = people;
+    if (image !== undefined) transaction.image = image;
+    if (category !== undefined) transaction.category = category;
+    if (createdAt !== undefined) transaction.createdAt = createdAt;
+
+    user.markModified("transactions");
+    await user.save();
+
+    // Update the Transaction model
+    const updatedTransaction = await Transaction.findByIdAndUpdate(
+      transactionId,
+      { $set: { amount, note, status, people, image, category, createdAt } },
+      { new: true }
+    );
+
+    if (!updatedTransaction) {
+      return res.status(404).json({ message: "Transaction not found in the Transaction model" });
+    }
+
+    res.status(200).json({ message: "Transaction updated successfully", transaction: updatedTransaction });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating transaction", error });
+  }
+}
+
+async function editRecurredTransaction(req, res) {
+  const { id: userId, transactionId } = req.params;
+  const { pushedIntoTransactions, amount, note, status, people, image, category, createdAt } = req.body;
+
+  try {
+    // Find the user by userId
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Locate the transaction in the user's transactions
+    const transaction = user.transactions.find((txn) => txn._id.toString() === transactionId);
+    if (!transaction) {
+      return res.status(404).json({ message: "Transaction not found in user's records" });
+    }
+
+    // Update all transaction fields
     if (amount !== undefined) transaction.amount = amount;
     if (note !== undefined) transaction.note = note;
     if (status !== undefined) transaction.status = status;
@@ -89,43 +136,18 @@ async function editTransaction(req, res) {
     if (createdAt !== undefined) transaction.createdAt = createdAt;
     if (pushedIntoTransactions !== undefined) transaction.pushedIntoTransactions = pushedIntoTransactions;
 
-    // Mark the transactions field as modified
     user.markModified("transactions");
-
-    // Save the updated user data
     await user.save();
 
-    // If "pushedIntoTransactions" is present, skip updating the Transaction model
-    if (pushedIntoTransactions !== undefined) {
-      return res.status(200).json({
-        message: "Transaction updated successfully in User model (Reminder update only)",
-        transaction
-      });
-    }
-
-    // Update the transaction in the Transaction model
-    const updatedTransaction = await Transaction.findByIdAndUpdate(
-      transactionId,
-      {
-        $set: {
-          amount, note, status, people, image, category,
-        },
-      },
-      { new: true } // Return the updated document
-    );
-
-    if (!updatedTransaction && pushedIntoTransactions == undefined) {
-      return res.status(404).json({ message: "Transaction not found in the Transaction model" });
-    }
-
-    // Respond with the updated transaction
-    res.status(200).json({ message: "Transaction updated successfully", transaction: updatedTransaction });
+    return res.status(200).json({
+      message: "Reminder transaction updated successfully in User model",
+      transaction
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error updating transaction", error });
+    return res.status(500).json({ message: "Error updating reminder transaction", error });
   }
 }
-
 
 // Delete a transaction (move to trash)
 async function deleteTransaction(req, res) {
@@ -235,7 +257,7 @@ const checkAndPushReminder = async (req, res) => {
 
     if (notificationAdded) {
       await user.save();
-      console.log("Reminders processed and saved successfully.");
+      console.log("Reminded transaction saved successfully.");
     }
 
     if (notificationAdded) {
@@ -253,6 +275,7 @@ module.exports = {
   addTransaction,
   getAllTransactions,
   editTransaction,
+  editRecurredTransaction,
   deleteTransaction,
   checkAndPushReminder
 };
