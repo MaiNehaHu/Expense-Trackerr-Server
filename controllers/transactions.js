@@ -32,99 +32,74 @@ async function addTransaction(req, res) {
     // Add the transaction to the user's transactions array
     user.transactions.push(savedTransaction);
 
-    // Update the budget with the transaction
-    await updateBudgetWithTransaction(savedTransaction, userId);
+    // Get the user's budgets
+    const userBudgets = user.budgets;
+
+    // Update budgets with the transaction
+    await updateBudgetWithTransaction(savedTransaction, userBudgets);
 
     await user.save();
 
-    res.status(201).json({ message: "Transaction added successfully", transaction: savedTransaction });
+    res.status(201).json({
+      message: "Transaction added successfully",
+      transaction: savedTransaction,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error adding transaction", error });
   }
 }
 
-async function updateBudgetWithTransaction(transaction, userId) {
+async function updateBudgetWithTransaction(transaction, userBudgets) {
   try {
     const transactionDate = moment(transaction.createdAt);
 
-    const budgetQuery = {
-      $or: [
-        {
-          type: "month",
-          "period.monthAndYear.month": transactionDate.format("MMMM"), // Month name
-          "period.monthAndYear.year": transactionDate.format("YYYY"),  // Year
-        },
-        {
-          type: "year",
-          "period.year": transactionDate.format("YYYY"), // Year
-        },
-      ],
-    };
+    for (const userBudget of userBudgets) {
+      const isMonthBudget =
+        userBudget.type === "month" &&
+        userBudget.period.monthAndYear.month === transactionDate.format("MMMM") &&
+        userBudget.period.monthAndYear.year === transactionDate.format("YYYY");
 
-    // Find all matching budgets
-    const budgets = await Budget.find(budgetQuery);
+      const isYearBudget =
+        userBudget.type === "year" &&
+        userBudget.period.year === transactionDate.format("YYYY");
 
-    if (!budgets || budgets.length === 0) {
-      console.log("No matching budgets found for the transaction date.");
-      return;
-    }
+      if (isMonthBudget || isYearBudget) {
+        // Find the category in the budget that matches the transaction category and is included
+        const categoryIndex = userBudget.categories.findIndex(
+          (cat) =>
+            cat._id.toString() === transaction.category._id.toString() &&
+            cat.included === true
+        );
 
-    for (const budget of budgets) {
-      budget.totalSpent = (budget.totalSpent || 0) + transaction.amount;
+        if (categoryIndex !== -1) {
+          console.log(`Updating budget: ${userBudget._id}`);
 
-      const categoryIndex = budget.categories.findIndex(
-        (cat) => cat._id.toString() === transaction.category._id.toString()
-      );
+          // Fetch the actual budget document from the database
+          const budgetDoc = await Budget.findById(userBudget._id);
 
-      if (categoryIndex !== -1) {
-        // Update existing category spent amount
-        budget.categories[categoryIndex].spent += transaction.amount;
-        budget.markModified(`categories.${categoryIndex}`);
-      } else {
-        return res.status(404).json({ message: "Category not found" });
-      }
+          if (!budgetDoc) {
+            console.log(`Budget document not found for ID: ${userBudget._id}`);
+            continue;
+          }
 
-      budget.markModified("totalSpent");
-      await budget.save();
-    }
+          // Update the budget document
+          budgetDoc.totalSpent = (budgetDoc.totalSpent || 0) + transaction.amount;
+          budgetDoc.categories[categoryIndex].spent += transaction.amount;
 
-    console.log("Budgets updated successfully in the Budget model.");
+          // Mark fields as modified (since it's a Mongoose document)
+          budgetDoc.markModified(`categories.${categoryIndex}`);
+          budgetDoc.markModified("totalSpent");
 
-    // Update User model budgets
-    const user = await User.findOne({ userId });
-    if (!user) {
-      console.log("User not found for updating budgets.");
-      return;
-    }
-
-    for (const budget of budgets) {
-      const userBudgetIndex = user.budgets.findIndex((b) => {
-        if (b.type === "month") {
-          return (
-            b.type === budget.type &&
-            b.period.monthAndYear.month === transactionDate.format("MMMM") &&
-            b.period.monthAndYear.year === transactionDate.format("YYYY")
-          );
-        } else if (b.type === "year") {
-          return (
-            b.type === budget.type &&
-            b.period.year === transactionDate.format("YYYY")
+          await budgetDoc.save();
+          console.log(`Budget updated in Budget model: ${budgetDoc._id}`);
+        } else {
+          console.log(
+            `Transaction category not found or not included in budget: ${userBudget._id}`
           );
         }
-        return false;
-      });
-
-      if (userBudgetIndex !== -1) {
-        user.budgets[userBudgetIndex] = budget;
-        user.markModified(`budgets.${userBudgetIndex}`);
-      } else {
-        console.log(`No matching budget found in the user's budgets array.`);
       }
     }
-
-    await user.save();
-    console.log("Budgets updated successfully in the User model.");
   } catch (error) {
     console.error("Error updating budget:", error);
     throw error;
@@ -205,6 +180,12 @@ async function editTransaction(req, res) {
     if (!updatedTransaction) {
       return res.status(404).json({ message: "Transaction not found in the Transaction model" });
     }
+
+    // Get the user's budgets
+    const userBudgets = user.budgets;
+
+    // Update budgets with the transaction
+    await updateBudgetWithTransaction(updatedTransaction, userBudgets);
 
     // Respond with the updated transaction
     res.status(200).json({ message: "Transaction updated successfully", transaction: updatedTransaction });
