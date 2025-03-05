@@ -101,25 +101,25 @@ async function editTransaction(req, res) {
         message: "Transaction updated successfully in User model (Reminder update only)",
         transaction
       });
-    } else {
-      // Update the transaction in the Transaction model
-      const updatedTransaction = await Transaction.findByIdAndUpdate(
-        transactionId,
-        {
-          $set: {
-            amount, note, status, people, image, category,
-          },
-        },
-        { new: true } // Return the updated document
-      );
-
-      if (!updatedTransaction) {
-        return res.status(404).json({ message: "Transaction not found in the Transaction model" });
-      }
-
-      // Respond with the updated transaction
-      res.status(200).json({ message: "Transaction updated successfully", transaction: updatedTransaction });
     }
+
+    // Update the transaction in the Transaction model
+    const updatedTransaction = await Transaction.findByIdAndUpdate(
+      transactionId,
+      {
+        $set: {
+          amount, note, status, people, image, category,
+        },
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedTransaction && pushedIntoTransactions == undefined) {
+      return res.status(404).json({ message: "Transaction not found in the Transaction model" });
+    }
+
+    // Respond with the updated transaction
+    res.status(200).json({ message: "Transaction updated successfully", transaction: updatedTransaction });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error updating transaction", error });
