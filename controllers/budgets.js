@@ -57,31 +57,18 @@ const editBudget = async (req, res) => {
             return res.status(404).json({ message: "Budget not found" });
         }
 
-        if (updatedBudgetData.totalSpent !== undefined) {
-            budget.totalSpent = updatedBudgetData.totalSpent;
-        }
-        if (updatedBudgetData.categories) {
-            budget.categories = updatedBudgetData.categories;
-        }
-        if (updatedBudgetData.period) {
-            budget.period = updatedBudgetData.period;
-        }
-        if (updatedBudgetData.type) {
-            budget.type = updatedBudgetData.type;
-        }
-
+        // Update the budget fields
+        Object.assign(budget, updatedBudgetData);
         await budget.save();
 
-        // Update the corresponding budget in the user's budgets array
+        // Find the budget inside the user's budgets array
         const userBudgetIndex = user.budgets.findIndex(
             (b) => b._id.toString() === budgetId
         );
 
         if (userBudgetIndex !== -1) {
-            user.budgets[userBudgetIndex] = {
-                ...user.budgets[userBudgetIndex],
-                ...updatedBudgetData,
-            };
+            // Update only the existing budget fields, not add a new object
+            Object.assign(user.budgets[userBudgetIndex], updatedBudgetData);
 
             user.markModified(`budgets.${userBudgetIndex}`);
             await user.save();
