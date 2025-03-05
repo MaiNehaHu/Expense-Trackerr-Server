@@ -95,8 +95,6 @@ async function editTransaction(req, res) {
     // Save the updated user data
     await user.save();
 
-    console.log("pushedIntoTransactions: ",pushedIntoTransactions);
-
     // If "pushedIntoTransactions" is present, skip updating the Transaction model
     if (pushedIntoTransactions !== undefined) {
       return res.status(200).json({
