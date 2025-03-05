@@ -78,4 +78,41 @@ const getMonthNotifications = async (req, res) => {
     }
 };
 
-module.exports = { getAllNotifications, getTodayNotifications, getMonthNotifications }
+async function editNotifcationTransaction(req, res) {
+    const { id: userId, transactionId } = req.params;
+    const { read, header, type, transaction: originalTransaction } = req.body;
+
+    try {
+        // Find the user by userId
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Locate the transaction in the user's transactions
+        const transaction = user.notifications.find((txn) => txn.transaction._id.toString() === transactionId);
+        if (!transaction) {
+            return res.status(404).json({ message: "Transaction not found in user's records" });
+        }
+
+        // Update transaction fields in the user's notifications
+        if (read !== undefined) transaction.read = read;
+        if (header !== undefined) transaction.header = header;
+        if (type !== undefined) transaction.type = type;
+        if (originalTransaction !== undefined) transaction.transaction = originalTransaction;
+
+        // Mark the notifications field as modified
+        user.markModified('notifications');
+
+        // Save the updated user data
+        await user.save();
+
+        // Respond with the updated recurring transaction
+        res.status(200).json({ message: "Recurring transaction updated successfully", transaction });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error updating recurring transaction", error });
+    }
+}
+
+module.exports = { getAllNotifications, getTodayNotifications, getMonthNotifications, editNotifcationTransaction }

@@ -63,7 +63,7 @@ const recuringTransactionSchema = new mongoose.Schema(
       relation: { type: String }
     },
     image: { type: String },
-    reminded: { type: Boolean, default: false },
+    pushedIntoTransactions: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

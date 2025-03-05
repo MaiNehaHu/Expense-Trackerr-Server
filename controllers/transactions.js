@@ -1,8 +1,7 @@
 // Import models
 const User = require("../model/user");
 const Transaction = require("../model/transaction");
-const Budget = require("../model/budget");
-const moment = require("moment");
+
 
 // Add a transaction
 async function addTransaction(req, res) {
@@ -32,12 +31,6 @@ async function addTransaction(req, res) {
     // Add the transaction to the user's transactions array
     user.transactions.push(savedTransaction);
 
-    // Get the user's budgets
-    const userBudgets = user.budgets;
-
-    // Update budgets with the transaction
-    await updateBudgetWithTransaction(savedTransaction, userBudgets);
-
     await user.save();
 
     res.status(201).json({
@@ -47,62 +40,6 @@ async function addTransaction(req, res) {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error adding transaction", error });
-  }
-}
-
-async function updateBudgetWithTransaction(transaction, userBudgets) {
-  try {
-    const transactionDate = moment(transaction.createdAt);
-
-    for (const userBudget of userBudgets) {
-      const isMonthBudget =
-        userBudget.type === "month" &&
-        userBudget.period.monthAndYear.month === transactionDate.format("MMMM") &&
-        userBudget.period.monthAndYear.year === transactionDate.format("YYYY");
-
-      const isYearBudget =
-        userBudget.type === "year" &&
-        userBudget.period.year === transactionDate.format("YYYY");
-
-      if (isMonthBudget || isYearBudget) {
-        // Find the category in the budget that matches the transaction category and is included
-        const categoryIndex = userBudget.categories.findIndex(
-          (cat) =>
-            cat._id.toString() === transaction.category._id.toString() &&
-            cat.included === true
-        );
-
-        if (categoryIndex !== -1) {
-          console.log(`Updating budget: ${userBudget._id}`);
-
-          // Fetch the actual budget document from the database
-          const budgetDoc = await Budget.findById(userBudget._id);
-
-          if (!budgetDoc) {
-            console.log(`Budget document not found for ID: ${userBudget._id}`);
-            continue;
-          }
-
-          // Update the budget document
-          budgetDoc.totalSpent = (budgetDoc.totalSpent || 0) + transaction.amount;
-          budgetDoc.categories[categoryIndex].spent += transaction.amount;
-
-          // Mark fields as modified (since it's a Mongoose document)
-          budgetDoc.markModified(`categories.${categoryIndex}`);
-          budgetDoc.markModified("totalSpent");
-
-          await budgetDoc.save();
-          console.log(`Budget updated in Budget model: ${budgetDoc._id}`);
-        } else {
-          console.log(
-            `Transaction category not found or not included in budget: ${userBudget._id}`
-          );
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Error updating budget:", error);
-    throw error;
   }
 }
 
@@ -127,7 +64,7 @@ async function getAllTransactions(req, res) {
 // Edit a transaction
 async function editTransaction(req, res) {
   const { id: userId, transactionId } = req.params;
-  const { amount, note, status, people, image, category, createdAt, reminded } = req.body;
+  const { amount, note, status, people, image, category, createdAt, pushedIntoTransactions } = req.body;
 
   try {
     // Find the user by userId
@@ -150,7 +87,7 @@ async function editTransaction(req, res) {
     if (image !== undefined) transaction.image = image;
     if (category !== undefined) transaction.category = category;
     if (createdAt !== undefined) transaction.createdAt = createdAt;
-    if (reminded !== undefined) transaction.reminded = reminded;
+    if (pushedIntoTransactions !== undefined) transaction.pushedIntoTransactions = pushedIntoTransactions;
 
     // Mark the transactions field as modified
     user.markModified("transactions");
@@ -158,8 +95,8 @@ async function editTransaction(req, res) {
     // Save the updated user data
     await user.save();
 
-    // If "reminded" is present, skip updating the Transaction model
-    if (reminded !== undefined) {
+    // If "pushedIntoTransactions" is present, skip updating the Transaction model
+    if (pushedIntoTransactions !== undefined) {
       return res.status(200).json({
         message: "Transaction updated successfully in User model (Reminder update only)",
         transaction
@@ -181,12 +118,6 @@ async function editTransaction(req, res) {
       return res.status(404).json({ message: "Transaction not found in the Transaction model" });
     }
 
-    // Get the user's budgets
-    const userBudgets = user.budgets;
-
-    // Update budgets with the transaction
-    await updateBudgetWithTransaction(updatedTransaction, userBudgets);
-
     // Respond with the updated transaction
     res.status(200).json({ message: "Transaction updated successfully", transaction: updatedTransaction });
   } catch (error) {
@@ -195,41 +126,6 @@ async function editTransaction(req, res) {
   }
 }
 
-async function editRecurringTransaction(req, res) {
-  const { id: userId, transactionId } = req.params;
-  const { read, header, type } = req.body;
-
-  try {
-    // Find the user by userId
-    const user = await User.findOne({ userId });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Locate the transaction in the user's transactions
-    const transaction = user.notifications.find((txn) => txn.transaction._id.toString() === transactionId);
-    if (!transaction) {
-      return res.status(404).json({ message: "Transaction not found in user's records" });
-    }
-
-    // Update transaction fields in the user's notifications
-    if (read !== undefined) transaction.read = read;
-    if (header !== undefined) transaction.header = header;
-    if (type !== undefined) transaction.type = type;
-
-    // Mark the notifications field as modified
-    user.markModified('notifications');
-
-    // Save the updated user data
-    await user.save();
-
-    // Respond with the updated recurring transaction
-    res.status(200).json({ message: "Recurring transaction updated successfully", transaction });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error updating recurring transaction", error });
-  }
-}
 
 // Delete a transaction (move to trash)
 async function deleteTransaction(req, res) {
@@ -357,7 +253,6 @@ module.exports = {
   addTransaction,
   getAllTransactions,
   editTransaction,
-  editRecurringTransaction,
   deleteTransaction,
   checkAndPushReminder
 };
