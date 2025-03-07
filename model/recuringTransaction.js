@@ -56,6 +56,7 @@ const recuringTransactionSchema = new mongoose.Schema(
         enum: ["Spent", "Earned", "Borrowed", "Lend"],
         default: "Spent",
       },
+      _id: { type: String, required: true },
     },
     people: {
       name: { type: String },
@@ -63,7 +64,7 @@ const recuringTransactionSchema = new mongoose.Schema(
       relation: { type: String }
     },
     image: { type: String },
-    reminded: { type: Boolean, default: false },
+    pushedIntoTransactions: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
