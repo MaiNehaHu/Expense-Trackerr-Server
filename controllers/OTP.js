@@ -1,11 +1,11 @@
+require("dotenv").config();
 const admin = require("firebase-admin");
 const User = require("../model/user");
 const Category = require("../model/category");
 const People = require("../model/people");
 
-admin.initializeApp({
-    credential: admin.credential.cert(require("../firebase-admin-sdk.json")),
-});
+const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
+admin.initializeApp({ credential: admin.credential.cert(firebaseConfig) });
 
 // Utility function to generate unique IDs
 function generateUniqueId() {
