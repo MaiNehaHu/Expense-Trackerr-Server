@@ -1,5 +1,6 @@
 const User = require("../model/user");
 const Category = require("../model/category");
+const People = require("../model/people");
 
 // Utility function to generate unique IDs
 function generateUniqueId() {
@@ -21,11 +22,18 @@ async function addUser(req, res) {
       type: "Spent",
     });
 
+    const defaultPeople = await People.create({
+      name: "Person Name",
+      relation: "relation",
+      contact: 9999988888
+    })
+
     // Create the new user with the default category
     const userData = {
       ...req.body,
       userId: uniqueId,
       categories: [defaultCategory],
+      people: [defaultPeople]
     };
 
     const newUser = await User.create(userData);

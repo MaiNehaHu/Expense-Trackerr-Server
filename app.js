@@ -57,6 +57,10 @@ app.use("/api/search", search_route);
 const budgets_route = require("./routes/budgets");
 app.use("/api/budgets", budgets_route);
 
+// Use the OTP routes
+const otpRoutes = require("./routes/OTP");
+app.use("/api/otp", otpRoutes);
+
 async function start() {
   try {
     await connectDB();
