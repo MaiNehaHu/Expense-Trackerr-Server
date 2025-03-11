@@ -196,156 +196,114 @@ const checkAndAddRecuringTransactions = async (req, res) => {
   const { id: userId } = req.params;
 
   try {
-    const user = await User.findOne({ userId }).populate(
-      "recuringTransactions"
-    );
-    if (!user) {
-      console.log("User not found");
-      res.status(404).json({ message: "User not found" });
-      return;
-    }
-
-    const currentDate = new Date();
-    const currentDayOfMonth = currentDate.getDate();
-    const currentTime = currentDate.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-    const currentWeekName = currentDate.toLocaleDateString("en-US", {
-      weekday: "long",
-    });
-    const currentMonth = currentDate.toLocaleDateString("en-US", {
-      month: "numeric",
-    });
-    let recurringAdded = false;
-
-    for (const recuring of user.recuringTransactions) {
-      const {
-        recuring: { count, pushedCount, interval, when },
-      } = recuring;
-
-      if (count <= 0) {
-        console.log(
-          "Recurring transaction has a count of 0 and cannot be processed."
-        );
-        continue; // Skip this transaction
+      // Find the user and populate recurring transactions
+      const user = await User.findOne({ userId }).populate("recuringTransactions");
+      if (!user) {
+          console.log("User not found");
+          return res.status(404).json({ message: "User not found" });
       }
 
-      let shouldAdd = false;
+      const currentDate = new Date();
+      const currentDayOfMonth = currentDate.getDate();
+      const currentTime = currentDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+      const currentWeekName = currentDate.toLocaleDateString("en-US", { weekday: "long" });
+      const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-based
+      let recurringAdded = false;
 
-      switch (interval) {
-        case "Everyday":
-          shouldAdd = when.everyDay === currentTime;
-          console.log(when.everyDay, "<-->", currentTime);
-          break;
-        case "Every week":
-          shouldAdd = when.everyWeek === currentWeekName;
-          console.log(when.everyWeek, "<-->", currentWeekName);
-          break;
-        case "Every month":
-          shouldAdd = when.everyMonth === currentDayOfMonth;
-          console.log(when.everyMonth, "<-->", currentDayOfMonth);
-          break;
-        case "Every year":
-          shouldAdd =
-            when.everyYear.month === Number(currentMonth) &&
-            when.everyYear.date === currentDayOfMonth;
-          console.log(
-            when.everyYear.month,
-            when.everyYear.date,
-            "<-->",
-            Number(currentMonth),
-            currentDayOfMonth
-          );
-          break;
-      }
+      for (const recuring of user.recuringTransactions) {
+          const { recuring: { count, pushedCount, interval, when } } = recuring;
 
-      if (shouldAdd) {
-        const transaction = {
-          amount: recuring.amount,
-          note: recuring.note,
-          category: recuring.category,
-          people: recuring.people,
-          image: recuring.image,
-          status: "Done",
-          createdAt: new Date(),
-          pushedIntoTransactions: true,
-          _id: recuring._id,
-        };
-
-        const notification = {
-          header: "Recurring Transaction Added!!",
-          type: "Recuring",
-          read: false,
-          transaction, // total transaction
-        };
-
-        if (count >= 1 && count > pushedCount) {
-          user.transactions.push(transaction);
-          user.notifications.push(notification);
-          recurringAdded = true;
-
-          // Ensure `pushedCount` is a valid number
-          recuring.pushedCount = recuring.pushedCount || 0;
-
-          const result = await RecuringTransaction.updateOne(
-            { _id: recuring._id },
-            { $inc: { "recuring.pushedCount": 1 } }
-            // Use `$inc` to increment the field
-          );
-
-          // Update the `recuringTransactions` array in `user`
-          const recuringIndex = user.recuringTransactions.findIndex(
-            (rec) => rec._id.toString() === recuring._id.toString()
-          );
-
-          if (recuringIndex !== -1) {
-            user.recuringTransactions[recuringIndex].recuring.pushedCount += 1;
-
-            user.markModified(`recuringTransactions.${recuringIndex}`);
-          } else {
-            console.error(
-              `Recurring transaction with ID: ${recuring._id} not found in user's recuringTransactions.`
-            );
+          if (count <= 0) {
+              console.log(`Skipping transaction ${recuring._id}: count is 0.`);
+              continue; // Skip transactions with no remaining count
           }
 
-          // Save the `user` document
-          await user.save();
+          let shouldAdd = false;
 
-          if (result.modifiedCount > 0) {
-            console.log(
-              `Transaction pushed and pushedCount incremented to: ${recuring.pushedCount + 1
-              }`
-            );
-          } else {
-            console.error(
-              "Failed to update pushedCount for recurring transaction."
-            );
+          switch (interval) {
+              case "Everyday":
+                  shouldAdd = when.everyDay === currentTime;
+                  break;
+              case "Every week":
+                  shouldAdd = when.everyWeek === currentWeekName;
+                  break;
+              case "Every month":
+                  shouldAdd = when.everyMonth == currentDayOfMonth; // Loose equality for possible type mismatch
+                  break;
+              case "Every year":
+                  shouldAdd = when.everyYear?.month == currentMonth && when.everyYear?.date == currentDayOfMonth;
+                  break;
+              default:
+                  console.log(`Unknown interval: ${interval}`);
+                  continue;
           }
-        } else {
-          console.log(`pushedCount:${pushedCount} matches count:${count}`);
-        }
+
+          if (shouldAdd) {
+              const transaction = {
+                  amount: recuring.amount,
+                  note: recuring.note,
+                  category: recuring.category,
+                  people: recuring.people,
+                  image: recuring.image,
+                  status: "Done",
+                  createdAt: new Date(),
+                  pushedIntoTransactions: true,
+                  _id: recuring._id,
+              };
+
+              const notification = {
+                  header: "Recurring Transaction Added!",
+                  type: "Recurring",
+                  read: false,
+                  transaction,
+              };
+
+              if (count > pushedCount) {
+                  user.transactions.push(transaction);
+                  user.notifications.push(notification);
+                  recurringAdded = true;
+
+                  // Increment pushedCount safely
+                  recuring.pushedCount = (recuring.pushedCount || 0) + 1;
+
+                  const result = await RecuringTransaction.updateOne(
+                      { _id: recuring._id },
+                      { $inc: { "recuring.pushedCount": 1 } }
+                  );
+
+                  // Update user's local recurring transactions
+                  const recuringIndex = user.recuringTransactions.findIndex(
+                      (rec) => rec._id.toString() === recuring._id.toString()
+                  );
+
+                  if (recuringIndex !== -1) {
+                      user.recuringTransactions[recuringIndex].recuring.pushedCount += 1;
+                      user.markModified(`recuringTransactions.${recuringIndex}`);
+                  } else {
+                      console.error(`Recurring transaction ${recuring._id} not found in user's records.`);
+                  }
+
+                  if (result.modifiedCount > 0) {
+                      console.log(`Transaction processed: pushedCount updated to ${recuring.pushedCount}`);
+                  } else {
+                      console.error(`Failed to update pushedCount for transaction ${recuring._id}`);
+                  }
+              } else {
+                  console.log(`Skipping transaction ${recuring._id}: pushedCount (${pushedCount}) matches count (${count})`);
+              }
+          }
       }
-    }
 
-    // save
-    await user.save();
+      await user.save();
 
-    // Send Success Response
-    if (recurringAdded) {
-      res
-        .status(200)
-        .json({ message: "Recurring Transactions Processed Successfully For: ", when });
-    } else {
-      res
-        .status(200)
-        .json({ message: "No Recurring Matched Condition" });
-    }
+      if (recurringAdded) {
+          return res.status(200).json({ message: "Recurring Transactions Processed Successfully" });
+      } else {
+          return res.status(200).json({ message: "No Recurring Transactions Matched Conditions" });
+      }
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error Processing Recurring Transactions", error });
+      console.error("Error Processing Recurring Transactions:", error);
+      return res.status(500).json({ message: "Error Processing Recurring Transactions", error });
   }
 };
 

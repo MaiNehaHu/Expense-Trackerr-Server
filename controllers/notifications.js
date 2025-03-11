@@ -115,4 +115,42 @@ async function editNotifcationTransaction(req, res) {
     }
 }
 
-module.exports = { getAllNotifications, getTodayNotifications, getMonthNotifications, editNotifcationTransaction }
+async function deleteNotification(req, res) {
+    const { id: userId, transactionId } = req.params;
+
+    try {
+        // Find the user by userId
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Find the index of the transaction in the notifications array
+        const transactionIndex = user.notifications.findIndex((txn) => txn.transaction._id.toString() === transactionId);
+        if (transactionIndex === -1) {
+            return res.status(404).json({ message: "Transaction not found in user's records" });
+        }
+
+        // Remove the transaction from the notifications array
+        user.notifications.splice(transactionIndex, 1);
+
+        // Mark the notifications field as modified
+        user.markModified('notifications');
+
+        // Save the updated user data
+        await user.save();
+
+        res.status(200).json({ message: "Transaction deleted successfully" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error deleting transaction", error });
+    }
+}
+
+module.exports = {
+    getAllNotifications,
+    getTodayNotifications,
+    getMonthNotifications,
+    editNotifcationTransaction,
+    deleteNotification
+}
