@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema(
     userId: { type: String, required: true, unique: true },
     contact: { type: Number, required: true, },
     otp: { type: Number },
+    biometric: { type: Boolean, default: false },
     userImage: { type: String, default: "" },
     transactions: {
       type: [Object],
