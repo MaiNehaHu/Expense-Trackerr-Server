@@ -37,3 +37,5 @@ bower_components/
 .DS_Store
 Thumbs.db
 .vercel
+
+firebase-admin-sdk.json
