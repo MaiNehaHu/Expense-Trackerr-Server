@@ -4,8 +4,7 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, default: "User Name" },
     userId: { type: String, required: true, unique: true },
-    contact: { type: Number, required: true, },
-    otp: { type: Number },
+    contact: { type: String, },
     biometric: { type: Boolean, default: false },
     userImage: { type: String, default: "" },
     transactions: {
@@ -50,8 +49,8 @@ const userSchema = new mongoose.Schema(
       },
       reminderToAddTrans: { type: Boolean, default: false },
       screenLock: { type: Boolean, default: false },
-      autoBackup: { type: Boolean, default: true },
-      autoCleanTrash: { type: Boolean, default: true },
+      autoBackup: { type: Boolean, default: false },
+      autoCleanTrash: { type: Boolean, default: false },
     },
   },
   { timestamps: true }
