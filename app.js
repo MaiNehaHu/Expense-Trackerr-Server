@@ -57,6 +57,9 @@ app.use("/api/search", search_route);
 const budgets_route = require("./routes/budgets");
 app.use("/api/budgets", budgets_route);
 
+const auth_route = require("./routes/auth");
+app.use("/api/auth", auth_route);
+
 async function start() {
   try {
     await connectDB();

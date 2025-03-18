@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, default: "User Name" },
     userId: { type: String, required: true, unique: true },
-    contact: { type: String, },
+    email: { type: String, required: true, unique: true },
     biometric: { type: Boolean, default: false },
     userImage: { type: String, default: "" },
     transactions: {
