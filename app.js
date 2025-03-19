@@ -12,6 +12,9 @@ app.get("/", (req, res) => {
   res.send("Hey Neha... Your Backend is running in browser 🎉");
 });
 
+// Cron Jobs
+require("./controllers/cronJobs");
+
 const users_route = require("./routes/users");
 app.use("/api/users", users_route);
 
