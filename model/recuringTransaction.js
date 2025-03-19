@@ -65,6 +65,7 @@ const recuringTransactionSchema = new mongoose.Schema(
     },
     image: { type: String },
     pushedIntoTransactions: { type: Boolean, default: false },
+    lastPushedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
