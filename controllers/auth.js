@@ -19,8 +19,10 @@ const authenticateUser = async (req, res) => {
             return res.status(400).json({ message: "Email is required." });
         }
 
+        const lowercasedEmail = email.toLowerCase();
+
         // Check if user already exists
-        let user = await User.findOne({ email });
+        let user = await User.findOne({ email: lowercasedEmail });
 
         if (!user) {
             // Create default category and person
