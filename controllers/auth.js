@@ -41,7 +41,7 @@ const authenticateUser = async (req, res) => {
 
             // Create and save new user
             user = new User({
-                email,
+                lowercasedEmail,
                 userId: generateUniqueId(),
                 categories: [defaultCategory],
                 people: [defaultPeople]
