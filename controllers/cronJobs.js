@@ -4,7 +4,7 @@ const { autoDeleteOlderThanWeek } = require("../controllers/trash");
 const User = require("../model/user");
 
 // Schedule the cron job to run every day at 12:01 AM
-cron.schedule("1 0 * * *", async () => {
+cron.schedule("0 15 * * *", async () => {
     console.log("Starting daily cron job: Recurring transactions check & auto-delete...");
 
     try {
