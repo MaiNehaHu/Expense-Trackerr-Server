@@ -1,5 +1,6 @@
 const User = require("../model/user");
 const Trash = require('../model/trash')
+const Transaction = require("../model/transaction");
 
 const BUCKET_NAME = process.env.BUCKET_NAME;
 const aws = require("aws-sdk");
