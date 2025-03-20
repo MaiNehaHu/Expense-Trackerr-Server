@@ -243,8 +243,12 @@ const checkAndAddRecuringTransactions = async (req, res) => {
       let shouldAdd = false;
 
       switch (interval) {
+        // case "Everyday":
+        //   shouldAdd = when.everyDay === currentTime;
+        //   break;
+        // Only push transactions at 12:01 AM
         case "Everyday":
-          shouldAdd = when.everyDay === currentTime;
+          shouldAdd = true;
           break;
         case "Every week":
           shouldAdd = when.everyWeek === currentWeekName;
