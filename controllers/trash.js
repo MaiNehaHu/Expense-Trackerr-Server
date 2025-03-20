@@ -2,19 +2,19 @@ const User = require("../model/user");
 const Trash = require('../model/trash')
 const Transaction = require("../model/transaction");
 
-const BUCKET_NAME = process.env.BUCKET_NAME;
-const aws = require("aws-sdk");
-const s3 = new aws.S3();
-const path = require("path");
-const multer = require("multer");
-const multerS3 = require("multer-s3");
+// const BUCKET_NAME = process.env.BUCKET_NAME;
+// const aws = require("aws-sdk");
+// const s3 = new aws.S3();
+// const path = require("path");
+// const multer = require("multer");
+// const multerS3 = require("multer-s3");
 
-aws.config.update({
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  apiVersion: "latest",
-  region: process.env.REGION,
-});
+// aws.config.update({
+//   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+//   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//   apiVersion: "latest",
+//   region: process.env.REGION,
+// });
 
 async function getAllTrashs(req, res) {
   const { id: userId } = req.params;
@@ -134,17 +134,17 @@ const autoDeleteOlderThanWeek = async (req, res) => {
     });
 
     // Delete images from S3
-    for (const txn of oldTransactions) {
-      if (txn.image) {
-        const imageKey = txn.image.split("/").pop(); // Extract image key from URL
-        const params = {
-          Bucket: BUCKET_NAME,
-          Key: imageKey,
-        };
-        await s3.deleteObject(params).promise();
-        console.log(`Deleted image: ${imageKey}`);
-      }
-    }
+    // for (const txn of oldTransactions) {
+    //   if (txn.image) {
+    //     const imageKey = txn.image.split("/").pop(); // Extract image key from URL
+    //     const params = {
+    //       Bucket: BUCKET_NAME,
+    //       Key: imageKey,
+    //     };
+    //     await s3.deleteObject(params).promise();
+    //     console.log(`Deleted image: ${imageKey}`);
+    //   }
+    // }
 
     // Delete transactions from the database
     await Transaction.deleteMany({ _id: { $in: oldTransactions.map(txn => txn._id) } });
@@ -155,7 +155,7 @@ const autoDeleteOlderThanWeek = async (req, res) => {
 
     await user.save();
 
-    res.status(200).json({ message: "Transactions and their images older than 7 days deleted successfully." });
+    res.status(200).json({ message: "Transactions older than 7 days deleted successfully." });
   } catch (error) {
     console.error("Error deleting old transactions:", error);
     res.status(500).json({ message: "Error deleting transactions older than 7 days.", error });
