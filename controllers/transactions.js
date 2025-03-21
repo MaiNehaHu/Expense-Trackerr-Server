@@ -6,7 +6,7 @@ const Transaction = require("../model/transaction");
 // Add a transaction
 async function addTransaction(req, res) {
   const { id: userId } = req.params;
-  const { amount, note, category, people, image, reminder } = req.body;
+  const { amount, note, category, people, image, reminder, createdAt } = req.body;
 
   try {
     // Find the user by userId
@@ -23,6 +23,7 @@ async function addTransaction(req, res) {
       people,
       image,
       reminder,
+      createdAt
     });
 
     // Save the transaction
