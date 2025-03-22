@@ -1,14 +1,23 @@
 const cron = require("node-cron");
-const { checkAndAddRecuringTransactions } = require("../controllers/recuringTransactions"); // Update the correct path
+const mongoose = require("mongoose");
+const { checkAndAddRecuringTransactions } = require("../controllers/recuringTransactions");
 const { autoDeleteOlderThanWeek } = require("../controllers/trash");
 const User = require("../model/user");
 
-// Schedule the cron job to run every day at 12:01 AM (Update the time format if needed)
+// Connect to MongoDB (Ensure it's the same DB as your main app)
+mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => console.log("Cron Worker connected to DB"))
+  .catch(err => console.error("DB Connection Error:", err));
+
+console.log("Cron Worker Started...");
+
+// Schedule cron jobs
 cron.schedule("1 0 * * *", async () => {
     console.log("Starting daily cron job: Recurring transactions check & auto-delete...");
 
     try {
-        // Fetch only users with autoCleanTrash enabled
         const users = await User.find().select("userId settings.autoCleanTrash");
 
         for (const user of users) {
@@ -19,10 +28,8 @@ cron.schedule("1 0 * * *", async () => {
                 })
             };
 
-            // Always run recurring transactions
             await checkAndAddRecuringTransactions(fakeReq, fakeRes);
 
-            // Only delete trash if autoCleanTrash is enabled
             if (user.settings?.autoCleanTrash) {
                 console.log(`User ${user.userId}: autoCleanTrash is ON. Deleting old transactions...`);
                 await autoDeleteOlderThanWeek(fakeReq, fakeRes);
@@ -36,5 +43,3 @@ cron.schedule("1 0 * * *", async () => {
         console.error("Error running daily cron job:", error);
     }
 });
-
-module.exports = cron;
