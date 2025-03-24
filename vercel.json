@@ -14,5 +14,11 @@
     ],
     "env": {
         "API_URL": "https://expense-trackerr-server.vercel.app"
-    }
+    },
+    "crons": [
+        {
+        "path": "/api/cron",
+        "schedule": "1 0 * * *"
+        }
+    ]
 }
