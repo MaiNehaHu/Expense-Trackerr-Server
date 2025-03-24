@@ -13,7 +13,7 @@ app.get("/", (req, res) => {
 });
 
 // Cron Jobs
-require("./controllers/cronJobs");
+// require("./controllers/cronJobs");
 
 const users_route = require("./routes/users");
 app.use("/api/users", users_route);
