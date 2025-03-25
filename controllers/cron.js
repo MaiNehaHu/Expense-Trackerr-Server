@@ -1,5 +1,5 @@
-const { checkAndAddRecuringTransactions } = require("../controllers/recuringTransactions");
-const { autoDeleteOlderThanWeek } = require("../controllers/trash");
+const { checkAndAddRecuringTransactions } = require("./recuringTransactions");
+const { autoDeleteOlderThanWeek } = require("./trash");
 const User = require("../model/user");
 const connectDB = require("../db/connect");
 
