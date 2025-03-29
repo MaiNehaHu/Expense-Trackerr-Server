@@ -79,7 +79,7 @@ const getMonthNotifications = async (req, res) => {
 };
 
 async function editNotifcationTransaction(req, res) {
-    const { id: userId, transactionId } = req.params;
+    const { id: userId, notificationId } = req.params;
     const { read, header, type, transaction: originalTransaction } = req.body;
 
     try {
@@ -90,7 +90,7 @@ async function editNotifcationTransaction(req, res) {
         }
 
         // Locate the transaction in the user's transactions
-        const transaction = user.notifications.find((txn) => txn.transaction._id.toString() === transactionId);
+        const transaction = user.notifications.find((noti) => noti._id.toString() === notificationId);
         if (!transaction) {
             return res.status(404).json({ message: "Transaction not found in user's records" });
         }
@@ -116,7 +116,7 @@ async function editNotifcationTransaction(req, res) {
 }
 
 async function deleteNotification(req, res) {
-    const { id: userId, transactionId } = req.params;
+    const { id: userId, notificationId } = req.params;
 
     try {
         // Find the user by userId
@@ -126,7 +126,7 @@ async function deleteNotification(req, res) {
         }
 
         // Find the index of the transaction in the notifications array
-        const transactionIndex = user.notifications.findIndex((txn) => txn.transaction._id.toString() === transactionId);
+        const transactionIndex = user.notifications.findIndex((noti) => noti._id.toString() === notificationId);        
         if (transactionIndex === -1) {
             return res.status(404).json({ message: "Transaction not found in user's records" });
         }

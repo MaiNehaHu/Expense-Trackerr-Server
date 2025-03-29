@@ -1,4 +1,5 @@
 const RecuringTransaction = require("../model/recuringTransaction");
+const Notification = require("../model/notification");
 const User = require("../model/user");
 const moment = require("moment");
 
@@ -279,12 +280,12 @@ const checkAndAddRecuringTransactions = async (req, res) => {
           _id: recuring._id,
         };
 
-        const notification = {
+        const notification = new Notification({
           header: "Recurring Transaction Added!",
           type: "Recurring",
           read: false,
           transaction,
-        };
+        });
 
         user.transactions.push(transaction);
         user.notifications.push(notification);

@@ -9,8 +9,8 @@ router.route('/today/:id').get(getTodayNotifications)
 
 router.route('/month/:id').get(getMonthNotifications)
 
-router.route('/:id/:transactionId').put(editNotifcationTransaction)
+router.route('/:id/:notificationId').put(editNotifcationTransaction)
 
-router.route('/:id/:transactionId').delete(deleteNotification)
+router.route('/:id/:notificationId').delete(deleteNotification)
 
 module.exports = router;
