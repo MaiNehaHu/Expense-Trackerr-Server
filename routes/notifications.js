@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 
-const { getAllNotifications, getTodayNotifications, getMonthNotifications, editNotifcationTransaction, deleteNotification } = require('../controllers/notifications');
+const { getAllNotifications, getTodayNotifications, getMonthNotifications, editNotifcationTransaction, deleteNotification, deleteAllNotifications } = require('../controllers/notifications');
 
 router.route('/:id').get(getAllNotifications)
+
+router.route('/:id').delete(deleteAllNotifications)
 
 router.route('/today/:id').get(getTodayNotifications)
 

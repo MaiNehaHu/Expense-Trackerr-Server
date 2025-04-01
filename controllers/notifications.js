@@ -126,7 +126,7 @@ async function deleteNotification(req, res) {
         }
 
         // Find the index of the transaction in the notifications array
-        const transactionIndex = user.notifications.findIndex((noti) => noti._id.toString() === notificationId);        
+        const transactionIndex = user.notifications.findIndex((noti) => noti._id.toString() === notificationId);
         if (transactionIndex === -1) {
             return res.status(404).json({ message: "Transaction not found in user's records" });
         }
@@ -147,10 +147,39 @@ async function deleteNotification(req, res) {
     }
 }
 
+async function deleteAllNotifications(req, res) {
+    const { id: userId } = req.params;
+
+    try {
+        // Find the user by userId
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Ensure notifications exist before deleting
+        if (user.notifications && user.notifications.length > 0) {
+            const notificationIds = user.notifications.map(n => n._id);
+            await Notification.deleteMany({ _id: { $in: notificationIds } });
+        }
+
+        // Clear all notifications from the user's notifications array
+        user.notifications = [];
+        user.markModified("notifications");
+        await user.save();
+
+        res.status(200).json({ message: "All notifications deleted successfully" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error deleting notifications", error });
+    }
+}
+
 module.exports = {
     getAllNotifications,
     getTodayNotifications,
     getMonthNotifications,
     editNotifcationTransaction,
-    deleteNotification
+    deleteNotification,
+    deleteAllNotifications
 }
