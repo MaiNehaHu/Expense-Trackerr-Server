@@ -18,8 +18,8 @@ app.get("/", (req, res) => {
 const users_route = require("./routes/users");
 app.use("/api/users", users_route);
 
-const image_route = require("./routes/userImage");
-app.use("/api/user-image", image_route);
+// const image_route = require("./routes/userImage");
+// app.use("/api/user-image", image_route);
 
 const analyticss_route = require("./routes/analytics");
 app.use("/api/analytics", analyticss_route);
@@ -30,11 +30,11 @@ app.use("/api/transactions", transactions_route);
 const recuring_transactions_route = require("./routes/recuringTransactions");
 app.use("/api/recuring-transactions", recuring_transactions_route);
 
-const transaction_img_route = require("./routes/transactionImage");
-app.use("/api/transaction-image", transaction_img_route);
+// const transaction_img_route = require("./routes/transactionImage");
+// app.use("/api/transaction-image", transaction_img_route);
 
-const img_only_route = require("./routes/imageOnly");
-app.use("/api/only-image", img_only_route);
+// const img_only_route = require("./routes/imageOnly");
+// app.use("/api/only-image", img_only_route);
 
 const transh_route = require("./routes/trash");
 app.use("/api/trash", transh_route);
