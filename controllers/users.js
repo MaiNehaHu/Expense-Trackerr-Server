@@ -21,11 +21,17 @@ async function addUser(req, res) {
   try {
     const uniqueId = generateUniqueId();
 
-    const defaultCategory = await Category.create({
+    const defaultSpent = await Category.create({
       hexColor: "#707070",
       name: "Others",
       sign: "-",
       type: "Spent",
+    });
+    const defaultEarned = await Category.create({
+      hexColor: "#0328fc",
+      name: "Salary",
+      sign: "+",
+      type: "Earned",
     });
 
     const defaultPeople = await People.create({
@@ -38,7 +44,7 @@ async function addUser(req, res) {
     const userData = {
       ...req.body,
       userId: uniqueId,
-      categories: [defaultCategory],
+      categories: [defaultSpent, defaultEarned],
       people: [defaultPeople]
     };
 
