@@ -41,10 +41,15 @@ const authenticateUser = async (req, res) => {
 
             // Create and save new user
             user = new User({
-                email : lowercasedEmail,
+                email: lowercasedEmail,
                 userId: generateUniqueId(),
                 categories: [defaultCategory],
-                people: [defaultPeople]
+                people: [defaultPeople],
+                transactions: [],
+                recuringTransactions: [],
+                trash: [],
+                notifications: [],
+                budgets: [],
             });
 
             await user.save();
