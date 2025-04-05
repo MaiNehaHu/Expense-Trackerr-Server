@@ -26,11 +26,17 @@ const authenticateUser = async (req, res) => {
 
         if (!user) {
             // Create default category and person
-            const defaultCategory = await Category.create({
+            const defaultSpent = await Category.create({
                 hexColor: "#707070",
                 name: "Others",
                 sign: "-",
                 type: "Spent",
+            });
+            const defaultEarned = await Category.create({
+                hexColor: "#1734eb",
+                name: "Salary",
+                sign: "+",
+                type: "Earned",
             });
 
             const defaultPeople = await People.create({
@@ -43,7 +49,7 @@ const authenticateUser = async (req, res) => {
             user = new User({
                 email: lowercasedEmail,
                 userId: generateUniqueId(),
-                categories: [defaultCategory],
+                categories: [defaultSpent, defaultEarned],
                 people: [defaultPeople],
                 transactions: [],
                 recuringTransactions: [],
