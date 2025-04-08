@@ -41,7 +41,7 @@ const authenticateUser = async (req, res) => {
 
             const defaultPeople = await People.create({
                 name: "Person Name",
-                relation: "relation",
+                relation: "Relation",
                 contact: 9999988888
             });
 
