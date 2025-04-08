@@ -19,6 +19,7 @@ const transactionSchema = new mongoose.Schema(
       },
     },
     people: {
+      _id: { type: String },
       name: { type: String },
       contact: { type: Number },
       relation: { type: String }
