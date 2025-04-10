@@ -163,7 +163,7 @@ const updateCategoryInUserData = async (user, categoryId, updatedCategory) => {
       item.category.name = name;
       item.category.hexColor = hexColor;
       item.category.type = type;
-      item.category.sign = sign;
+      // item.category.sign = sign;
     }
   };
 
@@ -176,7 +176,7 @@ const updateCategoryInUserData = async (user, categoryId, updatedCategory) => {
     user.categories[categoryIndex].name = name;
     user.categories[categoryIndex].hexColor = hexColor;
     user.categories[categoryIndex].type = type;
-    user.categories[categoryIndex].sign = sign;
+    // user.categories[categoryIndex].sign = sign;
     user.markModified("categories");
   }
 
@@ -207,7 +207,7 @@ const updateCategoryInUserData = async (user, categoryId, updatedCategory) => {
             category.name = name;
             category.hexColor = hexColor;
             category.type = type;
-            category.sign = sign;
+            // category.sign = sign;
           }
         });
       }
@@ -223,7 +223,7 @@ const updateCategoryInUserData = async (user, categoryId, updatedCategory) => {
           notification.transaction.category.name = name;
           notification.transaction.category.hexColor = hexColor;
           notification.transaction.category.type = type;
-          notification.transaction.category.sign = sign;
+          // notification.transaction.category.sign = sign;
         }
       }
     });
