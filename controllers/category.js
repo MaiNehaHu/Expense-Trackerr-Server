@@ -105,7 +105,7 @@ const updateInAllOtherList = async (updatedCategory) => {
       "category.name": updatedCategory.name,
       "category.hexColor": updatedCategory.hexColor,
       "category.type": updatedCategory.type,
-      "category.sign": updatedCategory.sign,
+      // "category.sign": updatedCategory.sign,
     };
 
     // Update Transactions
@@ -140,7 +140,7 @@ const updateInAllOtherList = async (updatedCategory) => {
           "categories.$[elem].name": updatedCategory.name,
           "categories.$[elem].hexColor": updatedCategory.hexColor,
           "categories.$[elem].type": updatedCategory.type,
-          "categories.$[elem].sign": updatedCategory.sign,
+          // "categories.$[elem].sign": updatedCategory.sign,
         },
       },
       { arrayFilters: [{ "elem._id": updatedCategory._id }] }
