@@ -61,7 +61,10 @@ const editCategory = async (req, res) => {
     // Update category in the Category collection
     const updatedCategory = await Category.findByIdAndUpdate(
       categoryId,
-      { name, hexColor, type, sign },
+      {
+        name, hexColor, type,
+        // sign
+      },
       { new: true } // Return the updated document
     );
 
