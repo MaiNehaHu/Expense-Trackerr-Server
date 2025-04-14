@@ -38,6 +38,6 @@ async function getSearchResults(req, res) {
         console.error('Error fetching search results:', error);
         return res.status(500).json({ message: 'Internal server error.' });
     }
-}
+} 
 
 module.exports = { getSearchResults };
