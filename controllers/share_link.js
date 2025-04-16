@@ -51,18 +51,11 @@ const getSharedTransactions = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: "User not found." });
         }
+        const transactions = (user.transactions || []).filter(
+            (txn) => txn.people === peopleId && txn.category === categoryId
+        );
 
-        const transactions = user.transactions || [];
-
-        // Fetch the user’s people list if it exists
-        const peopleList = user.people || [];
-
-        return res.status(200).json({
-            transactions,
-            peopleList,
-            sharedCategoryId: categoryId,
-            sharedPeopleId: peopleId
-        });
+        return res.status(200).json({ transactions });
 
     } catch (error) {
         console.error("Error fetching shared transactions:", error);
