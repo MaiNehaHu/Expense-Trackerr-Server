@@ -3,6 +3,8 @@ require("dotenv").config();
 const express = require("express");
 const connectDB = require("./db/connect");
 const app = express();
+const cors = require('cors');
+
 const PORT = process.env.PORT || 2002;
 
 // Middleware to parse JSON bodies
@@ -12,8 +14,10 @@ app.get("/", (req, res) => {
   res.send("Hey Neha... Your Backend is running in browser 🎉");
 });
 
-// Cron Jobs
-// require("./controllers/cronJobs");
+app.use(cors({
+  origin: 'http://localhost:5173', // or '*' to allow all (not recommended in production)
+  credentials: true, // if you're using cookies or auth headers
+}));
 
 const users_route = require("./routes/users");
 app.use("/api/users", users_route);
