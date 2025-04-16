@@ -6,6 +6,7 @@ const linkSchema = new mongoose.Schema(
         userId: String,
         sharedPeopleId: String,
         categoryId: String,
+        peopleId: String,
         createdAt: Date,
     });
 
