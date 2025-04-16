@@ -15,7 +15,7 @@ app.get("/", (req, res) => {
 });
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://rupayie-shared.app'],
+  origin: ['http://localhost:5173', 'https://rupayie-shared.vercel.app'],
 }));
 
 const users_route = require("./routes/users");
