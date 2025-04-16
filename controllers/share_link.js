@@ -55,7 +55,7 @@ const getSharedTransactions = async (req, res) => {
             (txn) => txn.people?._id === peopleId && txn.category._id === categoryId
         );
 
-        return res.status(200).json({ transactions });
+        return res.status(200).json(transactions);
 
     } catch (error) {
         console.error("Error fetching shared transactions:", error);
