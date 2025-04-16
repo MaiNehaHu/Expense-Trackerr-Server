@@ -20,7 +20,7 @@ const createShareLink = async (req, res) => {
             createdAt: new Date(),
         };
 
-        await db.collection("shared_links").insertOne(linkData);
+        await SharedLink.insertOne(linkData);
 
         return res.status(200).json({
             link: `https://rupayie-shared.vercel.app/shared/${token}`,
