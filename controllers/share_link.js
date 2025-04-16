@@ -52,7 +52,7 @@ const getSharedTransactions = async (req, res) => {
             return res.status(404).json({ message: "User not found." });
         }
         const transactions = (user.transactions || []).filter(
-            (txn) => txn.people === peopleId && txn.category === categoryId
+            (txn) => txn.people._id === peopleId && txn.category._id === categoryId
         );
 
         return res.status(200).json({ transactions });
