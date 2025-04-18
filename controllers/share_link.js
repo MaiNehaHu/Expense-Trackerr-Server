@@ -36,6 +36,7 @@ const createShareLink = async (req, res) => {
 
         return res.status(200).json({
             link: `https://www.rupayie.com/shared/${token}`,
+            data: linkData
         });
 
     } catch (error) {
