@@ -67,7 +67,7 @@ const auth_route = require("./routes/auth");
 app.use("/api/auth", auth_route);
 
 const share_link_route = require("./routes/share_links");
-app.use("/api/share-link", share_link_route);
+app.use("/api/share", share_link_route);
 
 async function start() {
   try {

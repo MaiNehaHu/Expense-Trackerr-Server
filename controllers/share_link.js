@@ -11,16 +11,28 @@ const createShareLink = async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields.' });
         }
 
-        const token = crypto.randomUUID(); // Generate a secure unique token
-        const linkData = {
+        // Generate a secure unique token
+        const token = crypto.randomUUID();
+
+        // Create a new shared link document
+        const linkData = new SharedLink({
             token,
             userId,
             peopleId,
             categoryId,
             createdAt: new Date(),
-        };
+        });
 
-        await SharedLink.insertOne(linkData);
+        await linkData.save();
+
+        // store in user.sharedLinks
+        const user = await User.findOne({ userId });
+
+        if (user) {
+            user.sharedLinks = user.sharedLinks || [];
+            user.sharedLinks.push(linkData);
+            await user.save();
+        }
 
         return res.status(200).json({
             link: `https://www.rupayie.com/shared/${token}`,
@@ -63,4 +75,56 @@ const getSharedTransactions = async (req, res) => {
     }
 };
 
-module.exports = { createShareLink, getSharedTransactions };
+// GET /api/share-link/user/:userId
+const getSharedLinksByUserId = async (req, res) => {
+    try {
+        const { id: userId } = req.params;
+
+        if (!userId) {
+            return res.status(400).json({ error: "Missing userId parameter." });
+        }
+
+        // Fetch all shared links created by the user
+        const sharedLinks = await SharedLink.find({ userId });
+
+        if (!sharedLinks || sharedLinks.length === 0) {
+            return res.status(404).json({ message: "No shared links found for this user." });
+        }
+
+        return res.status(200).json(sharedLinks);
+    } catch (error) {
+        console.error("Error fetching shared links:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+const deleteSharedLinks = async (req, res) => {
+    const { idOrToken } = req.params; // Can be either token or _id
+
+    try {
+        // Find the shared link by token or _id
+        const sharedLink = await SharedLink.findOne({
+            $or: [{ token: idOrToken }, { _id: idOrToken }]
+        });
+
+        if (!sharedLink) {
+            return res.status(404).json({ message: "No shared link found" });
+        }
+
+        // Delete the shared link document
+        await SharedLink.deleteOne({ _id: sharedLink._id });
+
+        // Remove the reference from user's sharedLinks array
+        await User.updateOne(
+            { userId: sharedLink.userId },
+            { $pull: { sharedLinks: { token: sharedLink.token } } }
+        );
+
+        return res.status(200).json({ message: "Shared link deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting shared link:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+module.exports = { createShareLink, getSharedTransactions, deleteSharedLinks, getSharedLinksByUserId };
