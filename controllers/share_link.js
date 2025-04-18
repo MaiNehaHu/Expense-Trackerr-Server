@@ -11,10 +11,24 @@ const createShareLink = async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields.' });
         }
 
-        // Generate a secure unique token
+        // Check for existing link with same peopleId AND categoryId for the user
+        const existingLink = await SharedLink.findOne({
+            userId,
+            peopleId,
+            categoryId
+        });
+
+        if (existingLink) {
+            return res.status(200).json({
+                message: 'Link already exists for this user with same people and category.',
+                link: `https://www.rupayie.com/shared/${existingLink.token}`,
+                data: existingLink
+            });
+        }
+
+        //  Generate new token
         const token = crypto.randomUUID();
 
-        // Create a new shared link document
         const linkData = new SharedLink({
             token,
             userId,
@@ -25,7 +39,7 @@ const createShareLink = async (req, res) => {
 
         await linkData.save();
 
-        // store in user.sharedLinks
+        //  Push to user's sharedLinks
         const user = await User.findOne({ userId });
 
         if (user) {
