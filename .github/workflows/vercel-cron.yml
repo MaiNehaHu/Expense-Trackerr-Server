@@ -2,8 +2,12 @@ name: Run Vercel Cron Job
 
 on:
   schedule:
-   - "cron": "30 19 * * *"   # Runs at 1:00 AM IST daily
-  workflow_dispatch: # Allows manual triggering from GitHub Actions UI
+    - cron: "31 18 * * *"  # Runs at 12:01 AM IST daily
+  workflow_dispatch:       # Allows manual trigger
+
+concurrency:
+  group: "vercel-cron-job"
+  cancel-in-progress: true  # Ensures only one run at a time
 
 jobs:
   trigger-vercel-api:
