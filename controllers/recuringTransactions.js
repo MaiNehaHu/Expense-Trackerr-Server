@@ -217,11 +217,10 @@ const checkAndAddRecuringTransactions = async (req, res) => {
     }
 
     const currentDate = new Date();
-    const today = currentDate.toISOString().split("T")[0]; // Get YYYY-MM-DD format
+    const today = currentDate.toISOString().split("T")[0]; // YYYY-MM-DD
     const currentDayOfMonth = currentDate.getDate();
-    const currentTime = currentDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
     const currentWeekName = currentDate.toLocaleDateString("en-US", { weekday: "long" });
-    const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-based
+    const currentMonth = currentDate.getMonth() + 1; // 0-based
     const currentYear = currentDate.getFullYear();
     let recurringAdded = false;
 
@@ -233,12 +232,28 @@ const checkAndAddRecuringTransactions = async (req, res) => {
         continue;
       }
 
+      // Check if already pushed today using lastPushedAt
       if (lastPushedAt) {
         const lastPushedDate = new Date(lastPushedAt).toISOString().split("T")[0];
         if (lastPushedDate === today) {
           console.log(`Skipping transaction ${recuring._id}: already pushed today.`);
-          continue; // Skip if already added today
+          continue;
         }
+      }
+
+      // Extra safeguard: Check in-memory transactions if already added today
+      const alreadyExistsToday = user.transactions.some((txn) => {
+        const createdAtDate = new Date(txn.createdAt).toISOString().split("T")[0];
+        return (
+          txn.pushedIntoTransactions &&
+          txn._id?.toString() === recuring._id.toString() &&
+          createdAtDate === today
+        );
+      });
+
+      if (alreadyExistsToday) {
+        console.log(`Skipping duplicate for today: transaction with _id ${recuring._id} already added.`);
+        continue;
       }
 
       let shouldAdd = false;
@@ -268,7 +283,7 @@ const checkAndAddRecuringTransactions = async (req, res) => {
       }
 
       if (shouldAdd) {
-        const transaction = {
+        const newTransaction = {
           amount: recuring.amount,
           note: recuring.note,
           category: recuring.category,
@@ -277,21 +292,21 @@ const checkAndAddRecuringTransactions = async (req, res) => {
           status: "Done",
           createdAt: new Date(),
           pushedIntoTransactions: true,
-          _id: recuring._id,
+          _id: recuring._id, // Keep recurring _id reference
         };
 
         const notification = new Notification({
           header: "Recurring Transaction Added!",
           type: "Recurring",
           read: false,
-          transaction,
+          transaction: newTransaction,
         });
 
-        user.transactions.push(transaction);
+        user.transactions.push(newTransaction);
         user.notifications.push(notification);
         recurringAdded = true;
 
-        // Increment pushedCount and update lastPushedAt
+        // Update pushedCount and lastPushedAt
         recuring.pushedCount = (recuring.pushedCount || 0) + 1;
         recuring.lastPushedAt = new Date();
 
@@ -300,7 +315,7 @@ const checkAndAddRecuringTransactions = async (req, res) => {
           { $inc: { "recuring.pushedCount": 1 }, $set: { lastPushedAt: new Date() } }
         );
 
-        // Update user's local recurring transactions
+        // Update the user's populated data
         const recuringIndex = user.recuringTransactions.findIndex(
           (rec) => rec._id.toString() === recuring._id.toString()
         );
