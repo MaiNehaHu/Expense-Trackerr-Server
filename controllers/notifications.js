@@ -128,7 +128,7 @@ async function deleteNotification(req, res) {
         // Find the index of the transaction in the notifications array
         const transactionIndex = user.notifications.findIndex((noti) => noti._id.toString() === notificationId);
         if (transactionIndex === -1) {
-            return res.status(404).json({ message: "Transaction not found in user's records" });
+            return res.status(404).json({ message: "Notification not found in user's records" });
         }
 
         // Remove the transaction from the notifications array
