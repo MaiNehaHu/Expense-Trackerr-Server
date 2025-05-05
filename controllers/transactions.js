@@ -139,7 +139,7 @@ async function deleteTransaction(req, res) {
     const transactionIndex = user.transactions.findIndex(
       (txn) => txn._id.toString() === transactionId
     );
-    if (transactionIndex === -1) {
+    if (transactionIndex === -1 || !transactionIndex) {
       return res.status(404).json({ message: "Transaction not found in user's records" });
     }
 

@@ -88,7 +88,7 @@ async function deleteRecuringTransaction(req, res) {
     const recuringTransactionIndex = user.recuringTransactions.findIndex(
       (transaction) => transaction._id.toString() === recuringtransactionId
     );
-    if (recuringTransactionIndex === -1) {
+    if (recuringTransactionIndex === -1 || !recuringTransactionIndex) {
       return res
         .status(404)
         .json({ message: "Recuring transaction not found" });
@@ -142,7 +142,7 @@ async function editRecuringTransactions(req, res) {
       (txn) => txn._id.toString() === recuringtransactionId
     );
 
-    if (transactionIndex === -1) {
+    if (transactionIndex === -1 || !transactionIndex) {
       return res
         .status(404)
         .json({ message: "Recurring Transaction not found in user's records" });
