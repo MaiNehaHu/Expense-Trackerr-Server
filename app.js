@@ -14,6 +14,7 @@ app.get("/", (req, res) => {
   res.send("Hey Neha... Your Backend is running in browser 🎉");
 });
 
+
 app.use(cors({
   origin: ['http://localhost:5173', 'https://rupayie-shared.vercel.app', 'https://www.rupayie.com'],
 }));
