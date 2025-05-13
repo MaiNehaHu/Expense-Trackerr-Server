@@ -222,37 +222,21 @@ const checkAndAddRecuringTransactions = async (req, res) => {
     const currentWeekName = currentDate.toLocaleDateString("en-US", { weekday: "long" });
     const currentMonth = currentDate.getMonth() + 1; // 0-based
     const currentYear = currentDate.getFullYear();
+
     let recurringAdded = false;
 
     for (const recuring of user.recuringTransactions) {
       const { recuring: { count, pushedCount, interval, when }, lastPushedAt } = recuring;
 
+      // Skip if max push count reached
       if (count <= pushedCount) {
         console.log(`Skipping transaction ${recuring._id}: reached max count.`);
         continue;
       }
 
-      // Check if already pushed today using lastPushedAt
-      if (lastPushedAt) {
-        const lastPushedDate = new Date(lastPushedAt).toISOString().split("T")[0];
-        if (lastPushedDate === today) {
-          console.log(`Skipping transaction ${recuring._id}: already pushed today.`);
-          continue;
-        }
-      }
-
-      // Extra safeguard: Check in-memory transactions if already added today
-      const alreadyExistsToday = user.transactions.some((txn) => {
-        const createdAtDate = new Date(txn.createdAt).toISOString().split("T")[0];
-        return (
-          txn.pushedIntoTransactions &&
-          txn._id?.toString() === recuring._id.toString() &&
-          createdAtDate === today
-        );
-      });
-
-      if (alreadyExistsToday) {
-        console.log(`Skipping duplicate for today: transaction with _id ${recuring._id} already added.`);
+      // Skip if already pushed today
+      if (lastPushedAt && new Date(lastPushedAt).toISOString().split("T")[0] === today) {
+        console.log(`Skipping transaction ${recuring._id}: already pushed today.`);
         continue;
       }
 
@@ -270,12 +254,11 @@ const checkAndAddRecuringTransactions = async (req, res) => {
           shouldAdd = when.everyWeek === currentWeekName;
           break;
         case "Every month":
-          // Handle invalid dates (e.g., Feb 30, April 31)
-          const validTransactionDate = getValidTransactionDate(currentYear, currentMonth, when.everyMonth);
-          shouldAdd = validTransactionDate === today;
+          const validDate = getValidTransactionDate(currentYear, currentMonth, when.everyMonth);
+          shouldAdd = validDate === today;
           break;
         case "Every year":
-          shouldAdd = when.everyYear?.month == currentMonth && when.everyYear?.date == currentDayOfMonth;
+          shouldAdd = when.everyYear?.month === currentMonth && when.everyYear?.date === currentDayOfMonth;
           break;
         default:
           console.log(`Unknown interval: ${interval}`);
