@@ -64,7 +64,7 @@ async function getAllTransactions(req, res) {
 
 // Edit a transaction
 async function editTransaction(req, res) {
-  const { id: userId, transactionId } = req.params;
+  const { id: userId } = req.params;
   const {
     amount,
     note,
@@ -73,7 +73,8 @@ async function editTransaction(req, res) {
     image,
     category,
     createdAt,
-    pushedIntoTransactions
+    pushedIntoTransactions,
+    transactionId
   } = req.body;
 
   try {
