@@ -1,6 +1,4 @@
 const User = require("../model/user");
-const Trash = require("../model/trash");
-const Transaction = require("../model/transaction");
 
 async function getAllTrashs(req, res) {
   const { id: userId } = req.params;
@@ -33,8 +31,6 @@ async function deleteTrash(req, res) {
     user.markModified("trash");
     await user.save();
 
-    await Trash.findByIdAndDelete(deletedTxn._id);
-
     res.status(200).json({ message: "Transaction deleted from trash successfully" });
   } catch (error) {
     console.error("Error deleting trash:", error);
@@ -48,12 +44,6 @@ async function emptyTrash(req, res) {
   try {
     const user = await User.findOne({ userId });
     if (!user) return res.status(404).json({ message: "User not found" });
-
-    const transactionIds = (user.trash || []).map((txn) => txn._id);
-
-    if (transactionIds.length > 0) {
-      await Trash.deleteMany({ _id: { $in: transactionIds } });
-    }
 
     user.trash = [];
     await user.save();
@@ -74,16 +64,6 @@ async function autoDeleteOlderThanWeek(req, res) {
 
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-    const oldTransactions = (user.trash || []).filter(
-      (txn) => txn?.createdAt && new Date(txn.createdAt) < oneWeekAgo
-    );
-
-    const oldTxnIds = oldTransactions.map((txn) => txn._id);
-
-    if (oldTxnIds.length > 0) {
-      await Transaction.deleteMany({ _id: { $in: oldTxnIds } });
-    }
 
     user.trash = user.trash.filter(
       (txn) => txn?.createdAt && new Date(txn.createdAt) >= oneWeekAgo

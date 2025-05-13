@@ -5,7 +5,6 @@ const Transaction = require("../model/transaction");
 const RecuringTransaction = require("../model/recuringTransaction");
 const Notification = require('../model/notification');
 const Budget = require('../model/budget');
-const Trash = require('../model/trash')
 const mongoose = require("mongoose");
 
 // Utility function to generate unique IDs
@@ -135,7 +134,6 @@ async function deleteUser(req, res) {
     await People.deleteMany({ _id: { $in: peopleIds } }).session(session);
     await Notification.deleteMany({ _id: { $in: notificationIds } }).session(session);
     await Budget.deleteMany({ _id: { $in: budgetIds } }).session(session);
-    await Trash.deleteMany({ _id: { $in: trashIds } }).session(session);
 
     // Delete user
     await User.findOneAndDelete({ userId: id }).session(session);

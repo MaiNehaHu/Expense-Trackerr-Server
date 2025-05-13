@@ -3,7 +3,6 @@ const Category = require("../model/category");
 const Transaction = require("../model/transaction");
 const RecuringTransaction = require("../model/recuringTransaction");
 const Budget = require("../model/budget");
-const Trash = require("../model/trash");
 const Notification = require("../model/notification");
 
 // Get All Categories
@@ -119,12 +118,6 @@ const updateInAllOtherList = async (updatedCategory) => {
 
     // Update Recurring Transactions
     await RecuringTransaction.updateMany(
-      { "category._id": updatedCategory._id },
-      { $set: categoryUpdate }
-    );
-
-    // Update Trash
-    await Trash.updateMany(
       { "category._id": updatedCategory._id },
       { $set: categoryUpdate }
     );
