@@ -6,7 +6,6 @@ const transactionSchema = new mongoose.Schema(
     editedAt: { type: Date },
     amount: { type: Number, required: true },
     note: { type: String, default: "" },
-    status: { type: String, default: "Pending" },
     category: {
       _id: { type: String, required: true },
       name: { type: String, default: "Others" },

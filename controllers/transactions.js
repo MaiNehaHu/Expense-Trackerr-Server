@@ -88,7 +88,7 @@ async function editTransaction(req, res) {
     const transactionIndex = user.transactions.findIndex(
       (txn) =>
         txn._id.toString() === transactionId &&
-        new Date(txn.createdAt).toISOString() === new Date(createdAt).toISOString()
+        new Date(txn.createdAt).getTime() === new Date(createdAt).getTime()
     );
 
     if (transactionIndex === -1) {
