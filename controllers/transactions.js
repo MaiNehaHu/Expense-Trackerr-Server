@@ -73,6 +73,7 @@ async function editTransaction(req, res) {
     image,
     category,
     createdAt,
+    editedCreatedAt,
     pushedIntoTransactions,
     transactionId
   } = req.body;
@@ -88,8 +89,7 @@ async function editTransaction(req, res) {
     const transactionIndex = user.transactions.findIndex(
       (txn) =>
         txn._id.toString() === transactionId
-      // &&
-      // new Date(txn.createdAt).getTime() === new Date(createdAt).getTime()
+        && new Date(txn.createdAt).getTime() === new Date(createdAt).getTime()
     );
 
     if (transactionIndex === -1) {
@@ -108,9 +108,8 @@ async function editTransaction(req, res) {
     if (people !== undefined) transaction.people = people;
     if (image !== undefined) transaction.image = image;
     if (category !== undefined) transaction.category = category;
-    if (createdAt !== undefined) transaction.createdAt = createdAt;
-    if (pushedIntoTransactions !== undefined)
-      transaction.pushedIntoTransactions = pushedIntoTransactions;
+    if (editedCreatedAt !== undefined) transaction.createdAt = editedCreatedAt;
+    if (pushedIntoTransactions !== undefined) transaction.pushedIntoTransactions = pushedIntoTransactions;
 
     // Mark the transactions field as modified
     user.markModified("transactions");
@@ -118,8 +117,8 @@ async function editTransaction(req, res) {
     // Save the updated user data
     await user.save();
 
-    // If "pushedIntoTransactions" is present, skip updating the Transaction model
-    if (pushedIntoTransactions !== undefined) {
+    // If "pushedIntoTransactions" is true, skip updating the Transaction model
+    if (pushedIntoTransactions == true) {
       return res.status(200).json({
         message: "Transaction updated successfully in User model (Reminder update only)",
         transaction
@@ -137,7 +136,7 @@ async function editTransaction(req, res) {
           people,
           image,
           category,
-          createdAt
+          createdAt: editedCreatedAt
         }
       },
       { new: true }
