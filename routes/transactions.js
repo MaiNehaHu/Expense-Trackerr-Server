@@ -11,6 +11,6 @@ router.route('/push-reminder/:id').post(checkAndPushReminder)
 
 router.route('/:id').get(getAllTransactions)
 
-router.route('/:id/:transactionId').put(editTransaction).delete(deleteTransaction);
+router.route('/:id').put(editTransaction).delete(deleteTransaction);
 
 module.exports = router;

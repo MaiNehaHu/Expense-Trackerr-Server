@@ -75,9 +75,14 @@ async function editTransaction(req, res) {
     }
 
     // Locate the transaction in the user's transactions
-    const transaction = user.transactions.find((txn) => txn._id.toString() === transactionId);
-    if (!transaction) {
-      return res.status(404).json({ message: "Transaction not found in user's records" });
+    const transactionIndex = user.transactions.findIndex(
+      (txn) =>
+        txn._id.toString() === transactionId &&
+        new Date(txn.createdAt).toISOString() === new Date(createdAt).toISOString()
+    );
+
+    if (transactionIndex === -1 || !transactionIndex) {
+      return res.status(404).json({ message: "Transaction not found or createdAt does not match" });
     }
 
     // Update transaction fields in the user's transactions
@@ -126,21 +131,24 @@ async function editTransaction(req, res) {
 
 // Delete a transaction (move to trash)
 async function deleteTransaction(req, res) {
-  const { id: userId, transactionId } = req.params;
+  const { id: userId } = req.params;
+  const { transactionId, createdAt } = req.body;
 
   try {
-    // Find the user by userId
     const user = await User.findOne({ userId }).populate("transactions");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Locate the transaction in the user's transactions
+    // Match both ID and createdAt
     const transactionIndex = user.transactions.findIndex(
-      (txn) => txn._id.toString() === transactionId
+      (txn) =>
+        txn._id.toString() === transactionId &&
+        new Date(txn.createdAt).toISOString() === new Date(createdAt).toISOString()
     );
+
     if (transactionIndex === -1 || !transactionIndex) {
-      return res.status(404).json({ message: "Transaction not found in user's records" });
+      return res.status(404).json({ message: "Transaction not found or createdAt does not match" });
     }
 
     // Remove the transaction from the transactions array
@@ -158,7 +166,7 @@ async function deleteTransaction(req, res) {
     // Respond with the deleted transaction details
     res.status(200).json({ message: "Transaction moved to trash", transaction: removedTransaction });
   } catch (error) {
-    console.error(error);
+    console.error("Error deleting transaction:", error);
     res.status(500).json({ message: "Error deleting transaction", error });
   }
 }

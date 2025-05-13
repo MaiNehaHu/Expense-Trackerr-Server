@@ -16,16 +16,25 @@ async function getAllTrashs(req, res) {
 }
 
 async function deleteTrash(req, res) {
-  const { id: userId, trashTransactionId } = req.params;
+  const { id: userId } = req.params;
+  const { transactionId, createdAt } = req.body;
 
   try {
     const user = await User.findOne({ userId });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const txnIndex = user.trash.findIndex((txn) => txn._id.toString() === trashTransactionId);
-    if (txnIndex === -1) return res.status(404).json({ message: "Transaction not found in trash" });
+    // Match both ID and createdAt
+    const txnIndex = user.trash.findIndex(
+      (txn) =>
+        txn._id.toString() === transactionId &&
+        new Date(txn.createdAt).toISOString() === new Date(createdAt).toISOString()
+    );
 
-    const deletedTxn = user.trash[txnIndex];
+    if (txnIndex === -1) {
+      return res.status(404).json({
+        message: "Transaction not found in trash or createdAt does not match",
+      });
+    }
 
     user.trash.splice(txnIndex, 1);
     user.markModified("trash");
@@ -80,23 +89,36 @@ async function autoDeleteOlderThanWeek(req, res) {
 }
 
 async function revertBack(req, res) {
-  const { id: userId, trashTransactionId } = req.params;
+  const { id: userId } = req.params;
+  const { transactionId, createdAt } = req.body;
 
   try {
-    // Find the user
     const user = await User.findOne({ userId });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const txnIndex = user.trash.findIndex((txn) => txn._id.toString() === trashTransactionId);
-    if (txnIndex === -1) return res.status(404).json({ message: "Transaction not found in trash" });
+    // Match both ID and createdAt
+    const txnIndex = user.trash.findIndex(
+      (txn) =>
+        txn._id.toString() === transactionId &&
+        new Date(txn.createdAt).toISOString() === new Date(createdAt).toISOString()
+    );
+
+    if (txnIndex === -1) {
+      return res.status(404).json({
+        message: "Transaction not found in trash or createdAt does not match",
+      });
+    }
 
     const transactionToRestore = user.trash[txnIndex];
     if (!transactionToRestore) {
       return res.status(400).json({ message: "Transaction data is missing or invalid" });
     }
 
+    // Destructure to exclude `deletedAt`
+    const { deletedAt, ...cleanedTransaction } = transactionToRestore;
+
     user.transactions = user.transactions || [];
-    user.transactions.push(transactionToRestore);
+    user.transactions.push(cleanedTransaction);
 
     user.trash.splice(txnIndex, 1);
     user.markModified("trash");

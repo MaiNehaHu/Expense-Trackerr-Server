@@ -7,9 +7,9 @@ const { getAllTrashs, deleteTrash, autoDeleteOlderThanWeek, revertBack } = requi
 // Route to get all posts
 router.route('/:id').get(getAllTrashs)
 
-router.route('/:id/:trashTransactionId').delete(deleteTrash)
+router.route('/:id').delete(deleteTrash)
 
-router.route('/revert/:id/:trashTransactionId').post(revertBack)
+router.route('/revert/:id').post(revertBack)
 
 router.route('/older-than-week/:id').delete(autoDeleteOlderThanWeek)
 
