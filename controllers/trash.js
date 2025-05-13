@@ -46,7 +46,7 @@ async function deleteTrash(req, res) {
     }
 
     // Find the transaction in the trash array
-    const trashIndex = user.trash.findIndex((txn) => txn._id.toString() === trashTransactionId);
+    const trashIndex = user.trash.find((txn) => txn._id.toString() === trashTransactionId);
     if (trashIndex === -1 || !trashIndex) {
       return res.status(404).json({ message: "Transaction not found in trash" });
     }
@@ -174,7 +174,7 @@ const revertBack = async (req, res) => {
     }
 
     // Find the transaction in trash
-    const transactionIndex = user.trash.findIndex(txn => txn._id.toString() === trashTransactionId);
+    const transactionIndex = user.trash.find(txn => txn._id.toString() === trashTransactionId);
     if (transactionIndex === -1 || !transactionIndex) {
       return res.status(404).json({ message: "Transaction not found in trash" });
     }
