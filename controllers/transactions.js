@@ -65,7 +65,16 @@ async function getAllTransactions(req, res) {
 // Edit a transaction
 async function editTransaction(req, res) {
   const { id: userId, transactionId } = req.params;
-  const { amount, note, status, people, image, category, createdAt, pushedIntoTransactions } = req.body;
+  const {
+    amount,
+    note,
+    status,
+    people,
+    image,
+    category,
+    createdAt,
+    pushedIntoTransactions
+  } = req.body;
 
   try {
     // Find the user by userId
@@ -81,11 +90,16 @@ async function editTransaction(req, res) {
         new Date(txn.createdAt).toISOString() === new Date(createdAt).toISOString()
     );
 
-    if (transactionIndex === -1 || !transactionIndex) {
-      return res.status(404).json({ message: "Transaction not found or createdAt does not match" });
+    if (transactionIndex === -1) {
+      return res.status(404).json({
+        message: "Transaction not found or createdAt does not match"
+      });
     }
 
-    // Update transaction fields in the user's transactions
+    // Access the transaction object directly
+    const transaction = user.transactions[transactionIndex];
+
+    // Update fields if provided
     if (amount !== undefined) transaction.amount = amount;
     if (note !== undefined) transaction.note = note;
     if (status !== undefined) transaction.status = status;
@@ -93,7 +107,8 @@ async function editTransaction(req, res) {
     if (image !== undefined) transaction.image = image;
     if (category !== undefined) transaction.category = category;
     if (createdAt !== undefined) transaction.createdAt = createdAt;
-    if (pushedIntoTransactions !== undefined) transaction.pushedIntoTransactions = pushedIntoTransactions;
+    if (pushedIntoTransactions !== undefined)
+      transaction.pushedIntoTransactions = pushedIntoTransactions;
 
     // Mark the transactions field as modified
     user.markModified("transactions");
@@ -109,25 +124,41 @@ async function editTransaction(req, res) {
       });
     }
 
-    // Update the transaction in the Transaction model
+    // Update Transaction model in DB
     const updatedTransaction = await Transaction.findByIdAndUpdate(
       transactionId,
-      { $set: { amount, note, status, people, image, category, createdAt } },
+      {
+        $set: {
+          amount,
+          note,
+          status,
+          people,
+          image,
+          category,
+          createdAt
+        }
+      },
       { new: true }
     );
 
     if (!updatedTransaction) {
-      return res.status(404).json({ message: "Transaction not found in the Transaction model" });
+      return res.status(404).json({
+        message: "Transaction not found in the Transaction model"
+      });
     }
 
-    // Respond with the updated transaction
-    res.status(200).json({ message: "Transaction updated successfully", transaction: updatedTransaction });
+    res.status(200).json({
+      message: "Transaction updated successfully",
+      transaction: updatedTransaction
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error updating transaction", error });
+    console.error("Error updating transaction:", error);
+    res.status(500).json({
+      message: "Error updating transaction",
+      error: error.message
+    });
   }
 }
-
 
 // Delete a transaction (move to trash)
 async function deleteTransaction(req, res) {
