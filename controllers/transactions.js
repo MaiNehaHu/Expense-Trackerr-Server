@@ -87,8 +87,9 @@ async function editTransaction(req, res) {
     // Locate the transaction in the user's transactions
     const transactionIndex = user.transactions.findIndex(
       (txn) =>
-        txn._id.toString() === transactionId &&
-        new Date(txn.createdAt).getTime() === new Date(createdAt).getTime()
+        txn._id.toString() === transactionId
+      // &&
+      // new Date(txn.createdAt).getTime() === new Date(createdAt).getTime()
     );
 
     if (transactionIndex === -1) {
