@@ -179,7 +179,7 @@ async function deleteTransaction(req, res) {
         new Date(txn.createdAt).toISOString() === new Date(createdAt).toISOString()
     );
 
-    if (transactionIndex === -1 || !transactionIndex) {
+    if (transactionIndex === -1) {
       return res.status(404).json({ message: "Transaction not found or createdAt does not match" });
     }
 
