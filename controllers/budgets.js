@@ -10,34 +10,39 @@ const getAllBudgets = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        res.status(200).json(user.budgets);
+        res.status(200).json(user.budgets || []);
     } catch (error) {
         console.error(error);
-        res.status(400).json({ message: "Error Getting Budgets: ", error });
+        res.status(400).json({ message: "Error getting budgets", error });
     }
-}
+};
 
 const addBudget = async (req, res) => {
     const { id: userId } = req.params;
-    const { type, period, totalBudget, totalSpent, categories } = req.body
+    const { type, period, totalBudget, totalSpent, categories } = req.body;
 
     try {
         const user = await User.findOne({ userId });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        // Create new budget
-        const newBudget = new Budget({ type, period, totalBudget, totalSpent, categories });
-        const savedBudget = await newBudget.save();
 
-        // Add budget to user's budgets
-        user.budgets.push(savedBudget);
+        const newBudget = new Budget({
+            type,
+            period,
+            totalBudget,
+            totalSpent,
+            categories,
+        });
+
+        user.budgets.push(newBudget);
+        user.markModified("budgets");
         await user.save();
 
-        res.status(201).json({ message: "Budget added successfully", budget: savedBudget });
+        res.status(201).json({ message: "Budget added successfully", budget: newBudget });
     } catch (error) {
         console.error(error);
-        res.status(400).json({ message: "Error Adding Budgets: ", error });
+        res.status(400).json({ message: "Error adding budget", error });
     }
 }
 
@@ -51,35 +56,22 @@ const editBudget = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Find the budget by budgetId in the Budget model
-        const budget = await Budget.findById(budgetId);
-        if (!budget) {
-            return res.status(404).json({ message: "Budget not found" });
-        }
-
-        // Update the budget fields
-        Object.assign(budget, updatedBudgetData);
-        await budget.save();
-
-        // Find the budget inside the user's budgets array
-        const userBudgetIndex = user.budgets.findIndex(
+        const index = user.budgets.findIndex(
             (b) => b._id.toString() === budgetId
         );
 
-        if (userBudgetIndex !== -1) {
-            // Update only the existing budget fields, not add a new object
-            Object.assign(user.budgets[userBudgetIndex], updatedBudgetData);
-
-            user.markModified(`budgets.${userBudgetIndex}`);
-            await user.save();
-        } else {
-            console.log("No matching budget found in the user's budgets array.");
+        if (index === -1) {
+            return res.status(404).json({ message: "Budget not found" });
         }
 
-        res.status(200).json({ message: "Budget Edited Successfully" });
+        Object.assign(user.budgets[index], updatedBudgetData);
+        user.markModified(`budgets.${index}`);
+        await user.save();
+
+        res.status(200).json({ message: "Budget updated successfully" });
     } catch (error) {
         console.error(error);
-        res.status(400).json({ message: "Error Editing Budget", error });
+        res.status(400).json({ message: "Error updating budget", error });
     }
 };
 
@@ -92,29 +84,23 @@ const deleteBudget = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Filter out the budget from the user's categories array
         const initialLength = user.budgets.length;
-        user.budgets = user.budgets.filter((bud) => bud._id.toString() !== budgetId);
+        user.budgets = user.budgets.filter(
+            (budget) => budget._id.toString() !== budgetId
+        );
 
         if (user.budgets.length === initialLength) {
-            return res.status(404).json({ message: "Budget not found in user's budgets" });
+            return res.status(404).json({ message: "Budget not found" });
         }
 
-        // Mark the `budgets` array as modified and save the user document
-        user.markModified(`budgets.${budgetId}`);
+        user.markModified("budgets");
         await user.save();
-
-        // Delete the budget from the `Budget` collection
-        const deletedBudget = await Budget.findByIdAndDelete(budgetId);
-        if (!deletedBudget) {
-            return res.status(404).json({ message: "Budget not found in the database" });
-        }
 
         res.status(200).json({ message: "Budget deleted successfully" });
     } catch (error) {
         console.error(error);
-        res.status(400).json({ message: "Error Deleting Budget: ", error });
+        res.status(400).json({ message: "Error deleting budget", error });
     }
-}
+};
 
 module.exports = { getAllBudgets, addBudget, editBudget, deleteBudget }
