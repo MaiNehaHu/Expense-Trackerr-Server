@@ -175,7 +175,6 @@ async function deleteAllNotifications(req, res) {
     }
 }
 
-const mongoose = require("mongoose");
 
 const deleteSelectedNotifications = async (req, res) => {
     const { id: userId } = req.params;
@@ -186,11 +185,7 @@ const deleteSelectedNotifications = async (req, res) => {
             return res.status(400).json({ message: "No notification IDs provided" });
         }
 
-        // Filter valid ObjectIds only
-        const validIds = notificationIds.filter((id) =>
-            mongoose.Types.ObjectId.isValid(id)
-        );
-
+        const validIds = notificationIds.filter((id) => typeof id === 'string' && id.length > 0);
         if (validIds.length === 0) {
             return res.status(400).json({ message: "No valid notification IDs provided" });
         }
@@ -200,38 +195,43 @@ const deleteSelectedNotifications = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Find which notification IDs exist in the DB
-        const existingNotifications = await Notification.find({
-            _id: { $in: validIds },
-        }).select("_id");
+        // Find which notification IDs exist in Notification DB
+        const existingNotifications = await Notification.find({ _id: { $in: validIds } }).select("_id");
+        const existingIds = existingNotifications.map(doc => doc._id.toString());
 
-        const foundIds = existingNotifications.map((doc) => doc._id.toString());
-        const notFoundIds = validIds.filter((id) => !foundIds.includes(id));
+        const deletedIds = [];
+        const skippedIds = [];
 
-        // Log skipped IDs
-        if (notFoundIds.length > 0) {
-            console.log("Skipping invalid/missing notification IDs:", notFoundIds);
-        }
-
-        // Step 1: Delete only the found ones
-        await Notification.deleteMany({ _id: { $in: foundIds } });
-
-        // Step 2: Remove from user.notifications
-        user.notifications = user.notifications.filter(
-            (notification) => !foundIds.includes(notification._id.toString())
-        );
+        // Remove from user.notifications in any case (whether Notification exists or not)
+        user.notifications = user.notifications.filter(notification => {
+            const id = notification._id.toString();
+            if (validIds.includes(id)) {
+                if (existingIds.includes(id)) {
+                    deletedIds.push(id); // Will be deleted from both
+                } else {
+                    skippedIds.push(id); // Only deleted from user.notifications
+                }
+                return false; // Remove this from user.notifications
+            }
+            return true; // Keep other notifications
+        });
 
         user.markModified("notifications");
         await user.save();
 
+        // Delete only existing notifications from Notification DB
+        if (deletedIds.length > 0) {
+            await Notification.deleteMany({ _id: { $in: deletedIds } });
+        }
+
         res.status(200).json({
-            message: "Selected notifications deleted successfully",
-            deletedIds: foundIds,
-            skippedIds: notFoundIds,
+            message: "Notifications processed successfully",
+            deletedFromBoth: deletedIds,
+            deletedFromUserOnly: skippedIds,
         });
     } catch (error) {
-        console.error("Error deleting selected notifications:", error);
-        res.status(500).json({ message: "Error deleting selected notifications", error });
+        console.error("Error deleting notifications:", error);
+        res.status(500).json({ message: "Internal server error", error });
     }
 };
 
