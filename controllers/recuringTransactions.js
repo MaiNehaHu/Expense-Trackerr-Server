@@ -36,16 +36,10 @@ async function addRecuringTransactions(req, res) {
   } = req.body;
 
   try {
-    // Find user by userId and populate recuring transactions
-    const user = await User.findOne({ userId }).populate(
-      "recuringTransactions"
-    );
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    const user = await User.findOne({ userId });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Create a new transaction
-    const transaction = new RecuringTransaction({
+    const newTransaction = new RecuringTransaction({
       recuring,
       amount,
       note,
@@ -53,24 +47,20 @@ async function addRecuringTransactions(req, res) {
       people,
       image,
       reminder,
+      createdAt: new Date(),
     });
 
-    // Save the transaction
-    const savedTransaction = await transaction.save();
-
-    // Add to user's Recuring Transactions array
-    user.recuringTransactions.push(savedTransaction);
+    user.recuringTransactions.push(newTransaction);
+    user.markModified("recuringTransactions");
     await user.save();
 
     res.status(201).json({
-      message: "Recuring Transaction added successfully",
-      transaction: savedTransaction,
+      message: "Recurring transaction added successfully",
+      transaction: newTransaction,
     });
   } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: "Error Adding Recuring Transaction", error });
+    console.error("Error adding recurring transaction:", error);
+    res.status(500).json({ message: "Error adding recurring transaction", error });
   }
 }
 
@@ -78,34 +68,27 @@ async function deleteRecuringTransaction(req, res) {
   const { id: userId, recuringtransactionId } = req.params;
 
   try {
-    const user = await User.findOne({ userId })
-      .populate("recuringTransactions")
-      .populate("transactions");
-
+    const user = await User.findOne({ userId });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const recuringTransactionIndex = user.recuringTransactions.findIndex(
-      (transaction) => transaction._id.toString() === recuringtransactionId
+    const index = user.recuringTransactions.findIndex(
+      (txn) => txn._id.toString() === recuringtransactionId
     );
 
-    if (recuringTransactionIndex === -1) {
-      return res.status(404).json({ message: "Recuring transaction not found" });
+    if (index === -1) {
+      return res.status(404).json({ message: "Recurring transaction not found" });
     }
 
-    // Remove from the user's recuringTransactions array
-    user.recuringTransactions.splice(recuringTransactionIndex, 1);
+    user.recuringTransactions.splice(index, 1);
     user.markModified("recuringTransactions");
     await user.save();
 
-    // Delete the recuring transaction from the RecuringTransaction model
-    await RecuringTransaction.findByIdAndDelete(recuringtransactionId);
-
-    res.status(200).json({ message: "Recuring Transaction deleted successfully" });
+    res.status(200).json({ message: "Recurring transaction deleted successfully" });
   } catch (error) {
-    console.error("Error Deleting Recuring Transaction:", error);
-    res.status(500).json({ message: "Error Deleting Recuring Transaction", error });
+    console.error("Error deleting recurring transaction:", error);
+    res.status(500).json({ message: "Error deleting recurring transaction", error });
   }
 }
 
@@ -122,68 +105,42 @@ async function editRecuringTransactions(req, res) {
   } = req.body;
 
   try {
-    // Fetch the user document
-    const user = await User.findOne({ userId })
-      .populate("recuringTransactions")
-      .populate("transactions");
+    const user = await User.findOne({ userId });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Find the recurring transaction in the user's records
-    const transactionIndex = user.recuringTransactions.findIndex(
+    const index = user.recuringTransactions.findIndex(
       (txn) => txn._id.toString() === recuringtransactionId
     );
 
-    if (transactionIndex === -1) {
-      return res
-        .status(404)
-        .json({ message: "Recurring Transaction not found in user's records" });
+    if (index === -1) {
+      return res.status(404).json({
+        message: "Recurring transaction not found",
+      });
     }
 
-    // Get the recurring transaction from the user's transactions
-    const recuringTransaction = user.recuringTransactions[transactionIndex];
+    const transaction = user.recuringTransactions[index];
 
-    // Update fields in the `RecuringTransaction` document
-    const updatedFields = {};
-    if (recuring !== undefined) updatedFields.recuring = recuring;
-    if (amount !== undefined) updatedFields.amount = amount;
-    if (note !== undefined) updatedFields.note = note;
-    if (image !== undefined) updatedFields.image = image;
-    if (reminder !== undefined) updatedFields.reminder = reminder;
-    if (category !== undefined) updatedFields.category = category;
-    if (people !== undefined) updatedFields.people = people;
+    if (recuring !== undefined) transaction.recuring = recuring;
+    if (amount !== undefined) transaction.amount = amount;
+    if (note !== undefined) transaction.note = note;
+    if (image !== undefined) transaction.image = image;
+    if (reminder !== undefined) transaction.reminder = reminder;
+    if (category !== undefined) transaction.category = category;
+    if (people !== undefined) transaction.people = people;
 
-    // Update the transaction in the `RecuringTransaction` database
-    const updatedTransaction = await RecuringTransaction.findByIdAndUpdate(
-      recuringtransactionId,
-      { $set: updatedFields },
-      { new: true }
-    );
-
-    if (!updatedTransaction) {
-      return res
-        .status(404)
-        .json({ message: "Recurring Transaction not found in the database" });
-    }
-
-    // Update the transaction in the user's document
-    Object.assign(recuringTransaction, updatedFields);
-    user.markModified(`recuringTransactions.${transactionIndex}`);
-
-    // Save the user document
+    user.markModified(`recuringTransactions.${index}`);
     await user.save();
 
     res.status(200).json({
-      message: "Recurring Transaction updated successfully",
-      updatedTransaction,
+      message: "Recurring transaction updated successfully",
+      transaction,
     });
   } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: "Error Editing Recurring Transaction", error });
+    console.error("Error editing recurring transaction:", error);
+    res.status(500).json({
+      message: "Error editing recurring transaction",
+      error,
+    });
   }
 }
 
