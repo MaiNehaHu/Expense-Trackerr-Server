@@ -81,6 +81,7 @@ async function deleteRecuringTransaction(req, res) {
     const user = await User.findOne({ userId })
       .populate("recuringTransactions")
       .populate("transactions");
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -88,29 +89,23 @@ async function deleteRecuringTransaction(req, res) {
     const recuringTransactionIndex = user.recuringTransactions.findIndex(
       (transaction) => transaction._id.toString() === recuringtransactionId
     );
-    if (recuringTransactionIndex === -1 || !recuringTransactionIndex) {
-      return res
-        .status(404)
-        .json({ message: "Recuring transaction not found" });
+
+    if (recuringTransactionIndex === -1) {
+      return res.status(404).json({ message: "Recuring transaction not found" });
     }
 
     // Remove from the user's recuringTransactions array
     user.recuringTransactions.splice(recuringTransactionIndex, 1);
-
-    // Save the updated user
+    user.markModified("recuringTransactions");
     await user.save();
 
     // Delete the recuring transaction from the RecuringTransaction model
     await RecuringTransaction.findByIdAndDelete(recuringtransactionId);
 
-    res
-      .status(200)
-      .json({ message: "Recuring Transaction deleted successfully" });
+    res.status(200).json({ message: "Recuring Transaction deleted successfully" });
   } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: "Error Deleting Recuring Transaction", error });
+    console.error("Error Deleting Recuring Transaction:", error);
+    res.status(500).json({ message: "Error Deleting Recuring Transaction", error });
   }
 }
 
@@ -141,7 +136,7 @@ async function editRecuringTransactions(req, res) {
       (txn) => txn._id.toString() === recuringtransactionId
     );
 
-    if (transactionIndex === -1 || !transactionIndex) {
+    if (transactionIndex === -1) {
       return res
         .status(404)
         .json({ message: "Recurring Transaction not found in user's records" });
