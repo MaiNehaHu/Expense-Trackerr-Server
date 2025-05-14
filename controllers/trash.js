@@ -81,10 +81,10 @@ async function autoDeleteOlderThanWeek(req, res) {
     user.markModified("trash");
     await user.save();
 
-    res.status(200).json({ message: "Old transactions deleted successfully" });
+    return { success: true, message: "Old transactions deleted successfully" };
   } catch (error) {
     console.error("Error auto-deleting old trash:", error);
-    res.status(500).json({ message: "Internal Server Error", error });
+    return { success: false, message: "Error", error: error.message };
   }
 }
 

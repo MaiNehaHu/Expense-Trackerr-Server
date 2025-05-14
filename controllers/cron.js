@@ -3,7 +3,7 @@ const { autoDeleteOlderThanWeek } = require("./trash");
 const User = require("../model/user");
 const connectDB = require("../db/connect");
 
-const runCronJob = async () => {
+const runCronJob = async (req, res) => {
     try {
         await connectDB(); // Ensure database connection
 
@@ -23,10 +23,12 @@ const runCronJob = async () => {
             }
         }
 
-        return { message: "Cron job executed successfully" };
+        res.status(200).json({ message: "Cron job executed successfully" });
+        console.log({ message: "Cron job executed successfully" });
     } catch (error) {
         console.error("Cron job error:", error);
-        return { message: "Error running cron job", error };
+        res.status(500).json({ message: "Cron job not executed" });
+        console.log({ message: "Error running cron job", error });
     }
 };
 

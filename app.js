@@ -70,6 +70,9 @@ app.use("/api/auth", auth_route);
 const share_link_route = require("./routes/share_links");
 app.use("/api/share", share_link_route);
 
+const cron_route = require("./routes/cron");
+app.use("/api/cron", cron_route);
+
 async function start() {
   try {
     await connectDB();
