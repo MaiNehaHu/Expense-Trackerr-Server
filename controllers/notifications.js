@@ -175,11 +175,72 @@ async function deleteAllNotifications(req, res) {
     }
 }
 
+const mongoose = require("mongoose");
+
+const deleteSelectedNotifications = async (req, res) => {
+    const { id: userId } = req.params;
+    const { notificationIds } = req.body;
+
+    try {
+        if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+            return res.status(400).json({ message: "No notification IDs provided" });
+        }
+
+        // Filter valid ObjectIds only
+        const validIds = notificationIds.filter((id) =>
+            mongoose.Types.ObjectId.isValid(id)
+        );
+
+        if (validIds.length === 0) {
+            return res.status(400).json({ message: "No valid notification IDs provided" });
+        }
+
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Find which notification IDs exist in the DB
+        const existingNotifications = await Notification.find({
+            _id: { $in: validIds },
+        }).select("_id");
+
+        const foundIds = existingNotifications.map((doc) => doc._id.toString());
+        const notFoundIds = validIds.filter((id) => !foundIds.includes(id));
+
+        // Log skipped IDs
+        if (notFoundIds.length > 0) {
+            console.log("Skipping invalid/missing notification IDs:", notFoundIds);
+        }
+
+        // Step 1: Delete only the found ones
+        await Notification.deleteMany({ _id: { $in: foundIds } });
+
+        // Step 2: Remove from user.notifications
+        user.notifications = user.notifications.filter(
+            (notification) => !foundIds.includes(notification._id.toString())
+        );
+
+        user.markModified("notifications");
+        await user.save();
+
+        res.status(200).json({
+            message: "Selected notifications deleted successfully",
+            deletedIds: foundIds,
+            skippedIds: notFoundIds,
+        });
+    } catch (error) {
+        console.error("Error deleting selected notifications:", error);
+        res.status(500).json({ message: "Error deleting selected notifications", error });
+    }
+};
+
 module.exports = {
     getAllNotifications,
     getTodayNotifications,
     getMonthNotifications,
     editNotifcationTransaction,
     deleteNotification,
-    deleteAllNotifications
+    deleteAllNotifications,
+    deleteSelectedNotifications
 }
