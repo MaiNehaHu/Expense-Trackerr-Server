@@ -1,45 +1,41 @@
-const Notification = require('../model/notification')
-const User = require('../model/user')
+const User = require('../model/user');
 
 const getAllNotifications = async (req, res) => {
     const { id: userId } = req.params;
 
     try {
-        const user = await User.findOne({ userId }).populate("notifications");
+        const user = await User.findOne({ userId });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        res.status(200).json(user.notifications);
+        res.status(200).json(user.notifications || []);
     } catch (error) {
         console.error(error);
-        res.status(400).json({ message: "Error Getting Notifications: ", error });
+        res.status(400).json({ message: "Error Getting Notifications", error });
     }
-}
+};
 
 const getTodayNotifications = async (req, res) => {
     const { id: userId } = req.params;
 
     try {
-        // Get today's date range
         const startOfToday = new Date();
         startOfToday.setHours(0, 0, 0, 0);
 
         const endOfToday = new Date();
         endOfToday.setHours(23, 59, 59, 999);
 
-        // Find the user and filter notifications by today's date
-        const user = await User.findOne({ userId }).populate({
-            path: 'notifications',
-            match: { createdAt: { $gte: startOfToday, $lt: endOfToday } },
-            // Filter notifications by createdAt
-        });
-
+        const user = await User.findOne({ userId });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        res.status(200).json(user.notifications);
+        const todaysNotifications = (user.notifications || []).filter(n =>
+            new Date(n.createdAt) >= startOfToday && new Date(n.createdAt) <= endOfToday
+        );
+
+        res.status(200).json(todaysNotifications);
     } catch (error) {
         console.error(error);
         res.status(400).json({ message: 'Error Getting Notifications', error });
@@ -50,28 +46,25 @@ const getMonthNotifications = async (req, res) => {
     const { id: userId } = req.params;
 
     try {
-        // Get the start and end of the current month
         const startOfMonth = new Date();
-        startOfMonth.setDate(1); // Set to the first day of the month
-        startOfMonth.setHours(0, 0, 0, 0); // Reset the time to the start of the day
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
 
         const endOfMonth = new Date();
-        endOfMonth.setMonth(endOfMonth.getMonth() + 1); // Move to the next month
-        endOfMonth.setDate(0); // Set to the last day of the current month
-        endOfMonth.setHours(23, 59, 59, 999); // Set time to the end of the day
+        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+        endOfMonth.setDate(0);
+        endOfMonth.setHours(23, 59, 59, 999);
 
-        // Find the user and filter notifications by the current month
-        const user = await User.findOne({ userId }).populate({
-            path: 'notifications',
-            match: { createdAt: { $gte: startOfMonth, $lte: endOfMonth } },
-        });
-
+        const user = await User.findOne({ userId });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Return only the notifications for the current month
-        res.status(200).json(user.notifications);
+        const monthNotifications = (user.notifications || []).filter(n =>
+            new Date(n.createdAt) >= startOfMonth && new Date(n.createdAt) <= endOfMonth
+        );
+
+        res.status(200).json(monthNotifications);
     } catch (error) {
         console.error(error);
         res.status(400).json({ message: 'Error Getting Notifications', error });
@@ -83,35 +76,28 @@ async function editNotifcationTransaction(req, res) {
     const { read, header, type, transaction: originalTransaction } = req.body;
 
     try {
-        // Find the user by userId
         const user = await User.findOne({ userId });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Locate the transaction in the user's transactions
-        const transaction = user.notifications.find((noti) => noti._id.toString() === notificationId);
-        if (!transaction) {
-            return res.status(404).json({ message: "Transaction not found in user's records" });
+        const notification = user.notifications.find(noti => noti._id.toString() === notificationId);
+        if (!notification) {
+            return res.status(404).json({ message: "Notification not found in user's records" });
         }
 
-        // Update transaction fields in the user's notifications
-        if (read !== undefined) transaction.read = read;
-        if (header !== undefined) transaction.header = header;
-        if (type !== undefined) transaction.type = type;
-        if (originalTransaction !== undefined) transaction.transaction = originalTransaction;
+        if (read !== undefined) notification.read = read;
+        if (header !== undefined) notification.header = header;
+        if (type !== undefined) notification.type = type;
+        if (originalTransaction !== undefined) notification.transaction = originalTransaction;
 
-        // Mark the notifications field as modified
         user.markModified('notifications');
-
-        // Save the updated user data
         await user.save();
 
-        // Respond with the updated recurring transaction
-        res.status(200).json({ message: "Recurring transaction updated successfully", transaction });
+        res.status(200).json({ message: "Notification updated successfully", notification });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Error updating recurring transaction", error });
+        res.status(500).json({ message: "Error updating notification", error });
     }
 }
 
@@ -119,31 +105,24 @@ async function deleteNotification(req, res) {
     const { id: userId, notificationId } = req.params;
 
     try {
-        // Find the user by userId
         const user = await User.findOne({ userId });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Find the index of the transaction in the notifications array
-        const transactionIndex = user.notifications.findIndex((noti) => noti._id.toString() === notificationId);
-        if (transactionIndex === -1 || !transactionIndex) {
+        const index = user.notifications.findIndex(noti => noti._id.toString() === notificationId);
+        if (index === -1) {
             return res.status(404).json({ message: "Notification not found in user's records" });
         }
 
-        // Remove the transaction from the notifications array
-        user.notifications.splice(transactionIndex, 1);
-
-        // Mark the notifications field as modified
+        user.notifications.splice(index, 1);
         user.markModified('notifications');
-
-        // Save the updated user data
         await user.save();
 
-        res.status(200).json({ message: "Transaction deleted successfully" });
+        res.status(200).json({ message: "Notification deleted successfully" });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Error deleting transaction", error });
+        res.status(500).json({ message: "Error deleting notification", error });
     }
 }
 
@@ -151,19 +130,11 @@ async function deleteAllNotifications(req, res) {
     const { id: userId } = req.params;
 
     try {
-        // Find the user by userId
         const user = await User.findOne({ userId });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Ensure notifications exist before deleting
-        if (user.notifications && user.notifications.length > 0) {
-            const notificationIds = user.notifications.map(n => n._id);
-            await Notification.deleteMany({ _id: { $in: notificationIds } });
-        }
-
-        // Clear all notifications from the user's notifications array
         user.notifications = [];
         user.markModified("notifications");
         await user.save();
@@ -175,7 +146,6 @@ async function deleteAllNotifications(req, res) {
     }
 }
 
-
 const deleteSelectedNotifications = async (req, res) => {
     const { id: userId } = req.params;
     const { notificationIds } = req.body;
@@ -185,7 +155,7 @@ const deleteSelectedNotifications = async (req, res) => {
             return res.status(400).json({ message: "No notification IDs provided" });
         }
 
-        const validIds = notificationIds.filter((id) => typeof id === 'string' && id.length > 0);
+        const validIds = [...new Set(notificationIds.filter(id => typeof id === 'string' && id.length > 0))];
         if (validIds.length === 0) {
             return res.status(400).json({ message: "No valid notification IDs provided" });
         }
@@ -195,39 +165,27 @@ const deleteSelectedNotifications = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Find which notification IDs exist in Notification DB
-        const existingNotifications = await Notification.find({ _id: { $in: validIds } }).select("_id");
-        const existingIds = existingNotifications.map(doc => doc._id.toString());
-
         const deletedIds = [];
         const skippedIds = [];
 
-        // Remove from user.notifications in any case (whether Notification exists or not)
-        user.notifications = user.notifications.filter(notification => {
-            const id = notification._id.toString();
-            if (validIds.includes(id)) {
-                if (existingIds.includes(id)) {
-                    deletedIds.push(id); // Will be deleted from both
-                } else {
-                    skippedIds.push(id); // Only deleted from user.notifications
-                }
-                return false; // Remove this from user.notifications
+        user.notifications = (user.notifications || []).filter(notification => {
+            const id = notification._id?.toString();
+            if (id && validIds.includes(id)) {
+                deletedIds.push(id);
+                return false; // Remove this
             }
-            return true; // Keep other notifications
+            return true; // Keep it
         });
 
         user.markModified("notifications");
         await user.save();
 
-        // Delete only existing notifications from Notification DB
-        if (deletedIds.length > 0) {
-            await Notification.deleteMany({ _id: { $in: deletedIds } });
-        }
+        skippedIds.push(...validIds.filter(id => !deletedIds.includes(id)));
 
         res.status(200).json({
-            message: "Notifications processed successfully",
-            deletedFromBoth: deletedIds,
-            deletedFromUserOnly: skippedIds,
+            message: "Selected notifications deleted successfully",
+            deleted: deletedIds,
+            skipped: skippedIds,
         });
     } catch (error) {
         console.error("Error deleting notifications:", error);
@@ -242,5 +200,5 @@ module.exports = {
     editNotifcationTransaction,
     deleteNotification,
     deleteAllNotifications,
-    deleteSelectedNotifications
-}
+    deleteSelectedNotifications,
+};

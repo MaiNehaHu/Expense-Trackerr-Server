@@ -282,6 +282,9 @@ const checkAndAddRecuringTransactions = async (req, res) => {
           transaction: newTransaction,
         });
 
+        // we are not doing notification.save because we don't want that to be in db.
+        // Just to create a unique ID we are using it
+
         user.transactions.push(newTransaction);
         user.notifications.push(notification);
         recurringAdded = true;
