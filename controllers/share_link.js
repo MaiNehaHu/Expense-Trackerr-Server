@@ -1,6 +1,5 @@
 const crypto = require("crypto");
-const User = require('../model/user');
-const SharedLink = require('../model/shared_link');
+const User = require("../model/user");
 
 // POST /api/share-link
 const createShareLink = async (req, res) => {
@@ -8,54 +7,49 @@ const createShareLink = async (req, res) => {
         const { userId, peopleId, categoryId } = req.body;
 
         if (!userId || !peopleId || !categoryId) {
-            return res.status(400).json({ error: 'Missing required fields.' });
+            return res.status(400).json({ error: "Missing required fields." });
         }
 
-        // Check for existing link with same peopleId AND categoryId for the user
-        const existingLink = await SharedLink.findOne({
-            userId,
-            peopleId,
-            categoryId
-        });
+        const user = await User.findOne({ userId });
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        user.sharedLinks = user.sharedLinks || [];
+
+        const existingLink = user.sharedLinks.find(
+            (link) =>
+                link.peopleId === peopleId &&
+                link.categoryId === categoryId
+        );
 
         if (existingLink) {
             return res.status(200).json({
-                message: 'Link already exists for this user with same people and category.',
+                message: "Link already exists.",
                 link: `https://www.rupayie.com/shared/${existingLink.token}`,
-                data: existingLink
+                data: existingLink,
             });
         }
 
-        //  Generate new token
         const token = crypto.randomUUID();
 
-        const linkData = new SharedLink({
+        const newLink = {
+            _id: token, // use token as _id
             token,
-            userId,
             peopleId,
             categoryId,
             createdAt: new Date(),
-        });
+        };
 
-        await linkData.save();
-
-        //  Push to user's sharedLinks
-        const user = await User.findOne({ userId });
-
-        if (user) {
-            user.sharedLinks = user.sharedLinks || [];
-            user.sharedLinks.push(linkData);
-            await user.save();
-        }
+        user.sharedLinks.push(newLink);
+        user.markModified("sharedLinks");
+        await user.save();
 
         return res.status(200).json({
             link: `https://www.rupayie.com/shared/${token}`,
-            data: linkData
+            data: newLink,
         });
-
     } catch (error) {
         console.error("Error creating share link:", error);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ error: "Internal server error" });
     }
 };
 
@@ -64,26 +58,22 @@ const getSharedTransactions = async (req, res) => {
     try {
         const { token } = req.params;
 
-        const shared = await SharedLink.findOne({ token });
+        const user = await User.findOne({ "sharedLinks.token": token });
 
-        if (!shared) {
-            return res.status(404).json({ message: "Invalid link." });
-        }
+        if (!user) return res.status(404).json({ message: "Invalid or expired link." });
 
-        const { userId, peopleId, categoryId } = shared;
+        const shared = user.sharedLinks.find((link) => link.token === token);
+        if (!shared) return res.status(404).json({ message: "Link not found." });
 
-        // Fetch the user with embedded transactions
-        const user = await User.findOne({ userId });
+        const { peopleId, categoryId } = shared;
 
-        if (!user) {
-            return res.status(404).json({ message: "User not found." });
-        }
         const transactions = (user.transactions || []).filter(
-            (txn) => txn.people?._id === peopleId && txn.category._id === categoryId
+            (txn) =>
+                txn.people?._id?.toString() === peopleId &&
+                txn.category?._id?.toString() === categoryId
         );
 
         return res.status(200).json(transactions);
-
     } catch (error) {
         console.error("Error fetching shared transactions:", error);
         return res.status(500).json({ error: "Internal server error" });
@@ -95,45 +85,36 @@ const getSharedLinksByUserId = async (req, res) => {
     try {
         const { id: userId } = req.params;
 
-        if (!userId) {
-            return res.status(400).json({ error: "Missing userId parameter." });
-        }
+        const user = await User.findOne({ userId });
+        if (!user) return res.status(404).json({ message: "User not found" });
 
-        // Fetch all shared links created by the user
-        const sharedLinks = await SharedLink.find({ userId });
-
-        if (!sharedLinks || sharedLinks.length === 0) {
-            return res.status(404).json({ message: "No shared links found for this user." });
-        }
-
-        return res.status(200).json(sharedLinks);
+        return res.status(200).json(user.sharedLinks || []);
     } catch (error) {
         console.error("Error fetching shared links:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 };
 
+// DELETE /api/share-link/:idOrToken
 const deleteSharedLinks = async (req, res) => {
-    const { idOrToken } = req.params; // Can be either token or _id
+    const { idOrToken } = req.params;
 
     try {
-        // Find the shared link by token or _id
-        const sharedLink = await SharedLink.findOne({
-            $or: [{ token: idOrToken }, { _id: idOrToken }]
-        });
+        const user = await User.findOne({ "sharedLinks.token": idOrToken });
+        if (!user) return res.status(404).json({ message: "User not found" });
 
-        if (!sharedLink) {
-            return res.status(404).json({ message: "No shared link found" });
+        const initialLength = user.sharedLinks.length;
+        user.sharedLinks = user.sharedLinks.filter(
+            (link) =>
+                link.token !== idOrToken && link._id?.toString() !== idOrToken
+        );
+
+        if (user.sharedLinks.length === initialLength) {
+            return res.status(404).json({ message: "Shared link not found" });
         }
 
-        // Delete the shared link document
-        await SharedLink.deleteOne({ _id: sharedLink._id });
-
-        // Remove the reference from user's sharedLinks array
-        await User.updateOne(
-            { userId: sharedLink.userId },
-            { $pull: { sharedLinks: { token: sharedLink.token } } }
-        );
+        user.markModified("sharedLinks");
+        await user.save();
 
         return res.status(200).json({ message: "Shared link deleted successfully" });
     } catch (error) {
