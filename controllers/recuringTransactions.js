@@ -120,7 +120,6 @@ async function editRecuringTransactions(req, res) {
     recuring,
     amount,
     note,
-    status,
     people,
     image,
     reminder,
@@ -156,7 +155,6 @@ async function editRecuringTransactions(req, res) {
     if (recuring !== undefined) updatedFields.recuring = recuring;
     if (amount !== undefined) updatedFields.amount = amount;
     if (note !== undefined) updatedFields.note = note;
-    if (status !== undefined) updatedFields.status = status;
     if (image !== undefined) updatedFields.image = image;
     if (reminder !== undefined) updatedFields.reminder = reminder;
     if (category !== undefined) updatedFields.category = category;
@@ -272,7 +270,6 @@ const checkAndAddRecuringTransactions = async (req, res) => {
           category: recuring.category,
           people: recuring.people,
           image: recuring.image,
-          status: "Done",
           createdAt: new Date(),
           pushedIntoTransactions: true,
           _id: recuring._id, // Keep recurring _id reference
