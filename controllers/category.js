@@ -117,9 +117,9 @@ const editCategory = async (req, res) => {
       user.markModified("budgets");
     }
 
-    // notifications
-    if (user.notifications) {
-      user.notifications.forEach((not) => {
+    // categories
+    if (user.categories) {
+      user.categories.forEach((not) => {
         if (not.transaction?.category?._id.toString() === categoryId) {
           not.transaction.category.name = name;
           not.transaction.category.hexColor = hexColor;
@@ -127,7 +127,7 @@ const editCategory = async (req, res) => {
           // not.transaction.category.sign = sign;
         }
       });
-      user.markModified("notifications");
+      user.markModified("categories");
     }
 
     // Save all user-level updates
@@ -170,9 +170,57 @@ const deleteCategory = async (req, res) => {
   }
 };
 
+const deleteSelectedCategories = async (req, res) => {
+  const { id: userId } = req.params;
+  const { categoryIds } = req.body;
+
+  try {
+    if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+      return res.status(400).json({ message: "No categories IDs provided" });
+    }
+
+    const validIds = [...new Set(categoryIds.filter(id => typeof id === 'string' && id.length > 0))];
+    if (validIds.length === 0) {
+      return res.status(400).json({ message: "No valid categories IDs provided" });
+    }
+
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const deletedIds = [];
+    const skippedIds = [];
+
+    user.categories = (user.categories || []).filter(cat => {
+      const id = cat._id?.toString();
+      if (id && validIds.includes(id)) {
+        deletedIds.push(id);
+        return false; // Remove this
+      }
+      return true; // Keep it
+    });
+
+    user.markModified("categories");
+    await user.save();
+
+    skippedIds.push(...validIds.filter(id => !deletedIds.includes(id)));
+
+    res.status(200).json({
+      message: "Selected categories deleted successfully",
+      deleted: deletedIds,
+      skipped: skippedIds,
+    });
+  } catch (error) {
+    console.error("Error deleting categories:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
 module.exports = {
   getAllCategories,
   addCategory,
   editCategory,
   deleteCategory,
+  deleteSelectedCategories
 };
