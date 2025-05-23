@@ -280,10 +280,58 @@ const checkAndAddRecuringTransactions = async (req, res) => {
   }
 };
 
+const deleteSelectedRecurrings = async (req, res) => {
+  const { id: userId } = req.params;
+  const { recurringIds } = req.body;
+
+  try {
+    if (!Array.isArray(recurringIds) || recurringIds.length === 0) {
+      return res.status(400).json({ message: "No recurrings IDs provided" });
+    }
+
+    const validIds = [...new Set(recurringIds.filter(id => typeof id === 'string' && id.length > 0))];
+    if (validIds.length === 0) {
+      return res.status(400).json({ message: "No valid recurrings IDs provided" });
+    }
+
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const deletedIds = [];
+    const skippedIds = [];
+
+    user.recuringTransactions = (user.recuringTransactions || []).filter(recurr => {
+      const id = recurr._id?.toString();
+      if (id && validIds.includes(id)) {
+        deletedIds.push(id);
+        return false; // Remove this
+      }
+      return true; // Keep it
+    });
+
+    user.markModified("recurrings");
+    await user.save();
+
+    skippedIds.push(...validIds.filter(id => !deletedIds.includes(id)));
+
+    res.status(200).json({
+      message: "Selected recurrings deleted successfully",
+      deleted: deletedIds,
+      skipped: skippedIds,
+    });
+  } catch (error) {
+    console.error("Error deleting recurrings:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
 module.exports = {
   checkAndAddRecuringTransactions,
   getAllRecuringTransactions,
   addRecuringTransactions,
   deleteRecuringTransaction,
   editRecuringTransactions,
+  deleteSelectedRecurrings
 };
