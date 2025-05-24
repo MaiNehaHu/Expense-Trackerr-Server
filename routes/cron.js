@@ -3,6 +3,6 @@ const { runCronJob } = require("../controllers/cron");
 
 const router = app.Router();
 
-router.route("/").get(runCronJob);
+router.route("/").post(runCronJob);
 
 module.exports = router;
