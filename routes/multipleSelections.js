@@ -6,14 +6,14 @@ const { deleteSelectedCategories } = require('../controllers/category');
 const { deleteSelectedRecurrings } = require('../controllers/recuringTransactions');
 const { deleteSelectedPeople } = require('../controllers/people');
 const { deleteSelectedTrashTrans, revertSelectedTrashTrans } = require('../controllers/trash');
-const { deleteSelectedSearchedTrans } = require('../controllers/search');
+const { deleteSelectedTransactions } = require('../controllers/transactions');
 
 router.route('/notifications/:id').delete(deleteSelectedNotifications)
 router.route('/categories/:id').delete(deleteSelectedCategories)
 router.route('/recurrings/:id').delete(deleteSelectedRecurrings)
 router.route('/people/:id').delete(deleteSelectedPeople)
 router.route('/trash/:id').delete(deleteSelectedTrashTrans)
-router.route('/search/:id').delete(deleteSelectedSearchedTrans)
+router.route('/transactions/:id').delete(deleteSelectedTransactions)
 router.route('/revert-trash/:id').delete(revertSelectedTrashTrans)
 
 module.exports = router;

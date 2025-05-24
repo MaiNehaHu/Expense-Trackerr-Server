@@ -286,10 +286,68 @@ const checkAndPushReminder = async (req, res) => {
   }
 };
 
+const deleteSelectedTransactions = async (req, res) => {
+  const { id: userId } = req.params;
+  const { transactions } = req.body;
+
+  try {
+    if (!Array.isArray(transactions) || transactions.length === 0) {
+      return res.status(400).json({ message: "No transactions provided" });
+    }
+
+    const validPairs = transactions
+      .filter(txn => txn.transactionId && txn.createdAt)
+      .map(txn => ({
+        id: txn.transactionId,
+        date: new Date(txn.createdAt).toISOString(),
+      }));
+
+    if (validPairs.length === 0) {
+      return res.status(400).json({ message: "No valid transactions provided" });
+    }
+
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const deletedIds = [];
+
+    user.transactions = (user.transactions || []).filter(searchedTrans => {
+      const id = searchedTrans._id?.toString();
+      const created = new Date(searchedTrans.createdAt).toISOString();
+
+      const match = validPairs.find(p => p.id === id && p.date === created);
+      if (match) {
+        deletedIds.push(id);
+        return false; // Remove
+      }
+
+      return true; // Keep
+    });
+
+    user.markModified("transactions");
+    await user.save();
+
+    const validIds = validPairs.map(p => p.id);
+    const skippedIds = validIds.filter(id => !deletedIds.includes(id));
+
+    return res.status(200).json({
+      message: "Selected transactions deleted successfully",
+      deleted: deletedIds,
+      skipped: skippedIds,
+    });
+  } catch (error) {
+    console.error("Error deleting search transactions:", error);
+    return res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+};
+
 module.exports = {
   addTransaction,
   getAllTransactions,
   editTransaction,
   deleteTransaction,
-  checkAndPushReminder
+  checkAndPushReminder,
+  deleteSelectedTransactions
 };
