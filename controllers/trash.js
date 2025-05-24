@@ -198,11 +198,75 @@ const deleteSelectedTrashTrans = async (req, res) => {
   }
 };
 
+const revertSelectedTrashTrans = async (req, res) => {
+  const { id: userId } = req.params;
+  const { trashTransaction } = req.body;
+
+  try {
+    if (!Array.isArray(trashTransaction) || trashTransaction.length === 0) {
+      return res.status(400).json({ message: "No trash transactions provided for revert" });
+    }
+
+    const validPairs = trashTransaction
+      .filter(txn => txn.transactionId && txn.createdAt)
+      .map(txn => ({
+        id: txn.transactionId,
+        date: new Date(txn.createdAt).toISOString()
+      }));
+
+    if (validPairs.length === 0) {
+      return res.status(400).json({ message: "No valid transactions provided for revert" });
+    }
+
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const restored = [];
+    const notFound = [];
+
+    user.trash = (user.trash || []).filter(trashTrans => {
+      const id = trashTrans._id?.toString();
+      const created = new Date(trashTrans.createdAt).toISOString();
+
+      const match = validPairs.find(p => p.id === id && p.date === created);
+      if (match) {
+        const { deletedAt, ...restoredTxn } = trashTrans;
+        user.transactions = user.transactions || [];
+        user.transactions.push(restoredTxn);
+        restored.push(id);
+        return false; // remove from trash
+      }
+
+      return true; // keep in trash
+    });
+
+    const attemptedIds = validPairs.map(p => p.id);
+    notFound.push(...attemptedIds.filter(id => !restored.includes(id)));
+
+    user.markModified("trash");
+    user.markModified("transactions");
+    await user.save();
+
+    return res.status(200).json({
+      message: "Selected trash transactions restored successfully",
+      restored,
+      notFound
+    });
+  } catch (error) {
+    console.error("Error reverting selected transactions:", error);
+    return res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+};
+
+
 module.exports = {
   getAllTrashs,
   deleteTrash,
   emptyTrash,
   autoDeleteOlderThanWeek,
   revertBack,
-  deleteSelectedTrashTrans
+  deleteSelectedTrashTrans,
+  revertSelectedTrashTrans,
 };
