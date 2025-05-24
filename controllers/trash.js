@@ -74,12 +74,16 @@ async function autoDeleteOlderThanWeek(req, res) {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    user.trash = user.trash.filter(
+    // Filter trash in JS
+    const filteredTrash = user.trash.filter(
       (txn) => txn?.createdAt && new Date(txn.createdAt) >= oneWeekAgo
     );
 
-    user.markModified("trash");
-    await user.save();
+    // Update directly using findOneAndUpdate to avoid version conflicts
+    await User.findOneAndUpdate(
+      { userId },
+      { $set: { trash: filteredTrash } }
+    );
 
     return { success: true, message: "Old transactions deleted successfully" };
   } catch (error) {
