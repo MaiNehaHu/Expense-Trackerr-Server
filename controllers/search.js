@@ -38,6 +38,53 @@ async function getSearchResults(req, res) {
         console.error('Error fetching search results:', error);
         return res.status(500).json({ message: 'Internal server error.' });
     }
-} 
+}
 
-module.exports = { getSearchResults };
+const deleteSelectedSearchedTrans = async (req, res) => {
+    const { id: userId } = req.params;
+    const { searchedTransactionIds } = req.body;
+
+    try {
+        if (!Array.isArray(searchedTransactionIds) || searchedTransactionIds.length === 0) {
+            return res.status(400).json({ message: "No search transactions IDs provided" });
+        }
+
+        const validIds = [...new Set(searchedTransactionIds.filter(id => typeof id === 'string' && id.length > 0))];
+        if (validIds.length === 0) {
+            return res.status(400).json({ message: "No valid search transactions IDs provided" });
+        }
+
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const deletedIds = [];
+        const skippedIds = [];
+
+        user.transactions = (user.transactions || []).filter(searchedTrans => {
+            const id = searchedTrans._id?.toString();
+            if (id && validIds.includes(id)) {
+                deletedIds.push(id);
+                return false; // Remove this
+            }
+            return true; // Keep it
+        });
+
+        user.markModified("transactions");
+        await user.save();
+
+        skippedIds.push(...validIds.filter(id => !deletedIds.includes(id)));
+
+        res.status(200).json({
+            message: "Selected search transactions deleted successfully",
+            deleted: deletedIds,
+            skipped: skippedIds,
+        });
+    } catch (error) {
+        console.error("Error deleting search transactions:", error);
+        res.status(500).json({ message: "Internal server error", error });
+    }
+};
+
+module.exports = { getSearchResults, deleteSelectedSearchedTrans };

@@ -136,10 +136,58 @@ async function revertBack(req, res) {
   }
 }
 
+const deleteSelectedTrashTrans = async (req, res) => {
+  const { id: userId } = req.params;
+  const { trashTransactionIds } = req.body;
+
+  try {
+    if (!Array.isArray(trashTransactionIds) || trashTransactionIds.length === 0) {
+      return res.status(400).json({ message: "No trash transactions IDs provided" });
+    }
+
+    const validIds = [...new Set(trashTransactionIds.filter(id => typeof id === 'string' && id.length > 0))];
+    if (validIds.length === 0) {
+      return res.status(400).json({ message: "No valid trash transactions IDs provided" });
+    }
+
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const deletedIds = [];
+    const skippedIds = [];
+
+    user.trash = (user.trash || []).filter(trashTrans => {
+      const id = trashTrans._id?.toString();
+      if (id && validIds.includes(id)) {
+        deletedIds.push(id);
+        return false; // Remove this
+      }
+      return true; // Keep it
+    });
+
+    user.markModified("trash");
+    await user.save();
+
+    skippedIds.push(...validIds.filter(id => !deletedIds.includes(id)));
+
+    res.status(200).json({
+      message: "Selected trash transactions deleted successfully",
+      deleted: deletedIds,
+      skipped: skippedIds,
+    });
+  } catch (error) {
+    console.error("Error deleting trash transactions:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
 module.exports = {
   getAllTrashs,
   deleteTrash,
   emptyTrash,
   autoDeleteOlderThanWeek,
   revertBack,
+  deleteSelectedTrashTrans
 };

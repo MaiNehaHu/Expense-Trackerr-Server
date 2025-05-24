@@ -97,10 +97,10 @@ const editPerson = async (req, res) => {
             user.markModified("trash");
         }
 
-        // Update in user.recuringTransactions
-        if (Array.isArray(user.recuringTransactions)) {
-            user.recuringTransactions.forEach(updatePerson);
-            user.markModified("recuringTransactions");
+        // Update in user.people
+        if (Array.isArray(user.people)) {
+            user.people.forEach(updatePerson);
+            user.markModified("people");
         }
 
         // Update in user.notifications.transaction.people
@@ -159,4 +159,51 @@ async function deletePerson(req, res) {
     }
 }
 
-module.exports = { addPerson, getAllPeople, editPerson, deletePerson }
+const deleteSelectedPeople = async (req, res) => {
+    const { id: userId } = req.params;
+    const { peopleIds } = req.body;
+
+    try {
+        if (!Array.isArray(peopleIds) || peopleIds.length === 0) {
+            return res.status(400).json({ message: "No people IDs provided" });
+        }
+
+        const validIds = [...new Set(peopleIds.filter(id => typeof id === 'string' && id.length > 0))];
+        if (validIds.length === 0) {
+            return res.status(400).json({ message: "No valid people IDs provided" });
+        }
+
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const deletedIds = [];
+        const skippedIds = [];
+
+        user.people = (user.people || []).filter(person => {
+            const id = person._id?.toString();
+            if (id && validIds.includes(id)) {
+                deletedIds.push(id);
+                return false; // Remove this
+            }
+            return true; // Keep it
+        });
+
+        user.markModified("people");
+        await user.save();
+
+        skippedIds.push(...validIds.filter(id => !deletedIds.includes(id)));
+
+        res.status(200).json({
+            message: "Selected people deleted successfully",
+            deleted: deletedIds,
+            skipped: skippedIds,
+        });
+    } catch (error) {
+        console.error("Error deleting people:", error);
+        res.status(500).json({ message: "Internal server error", error });
+    }
+};
+
+module.exports = { addPerson, getAllPeople, editPerson, deletePerson, deleteSelectedPeople }
