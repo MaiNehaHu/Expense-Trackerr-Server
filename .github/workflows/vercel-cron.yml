@@ -14,4 +14,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Call Vercel API
-        run: curl -X GET "https://expense-trackerr-server.vercel.app/api/cron"
+        run: curl -X POST "https://expense-trackerr-server.vercel.app/api/cron"
