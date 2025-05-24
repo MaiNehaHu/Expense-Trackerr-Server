@@ -142,16 +142,22 @@ async function revertBack(req, res) {
 
 const deleteSelectedTrashTrans = async (req, res) => {
   const { id: userId } = req.params;
-  const { trashTransactionIds } = req.body;
+  const { trashTransaction } = req.body;
 
   try {
-    if (!Array.isArray(trashTransactionIds) || trashTransactionIds.length === 0) {
-      return res.status(400).json({ message: "No trash transactions IDs provided" });
+    if (!Array.isArray(trashTransaction) || trashTransaction.length === 0) {
+      return res.status(400).json({ message: "No trash transactions provided" });
     }
 
-    const validIds = [...new Set(trashTransactionIds.filter(id => typeof id === 'string' && id.length > 0))];
-    if (validIds.length === 0) {
-      return res.status(400).json({ message: "No valid trash transactions IDs provided" });
+    const validPairs = trashTransaction
+      .filter(txn => txn.transactionId && txn.createdAt)
+      .map(txn => ({
+        id: txn.transactionId,
+        date: new Date(txn.createdAt).toISOString()
+      }));
+
+    if (validPairs.length === 0) {
+      return res.status(400).json({ message: "No valid transactions provided" });
     }
 
     const user = await User.findOne({ userId });
@@ -160,30 +166,35 @@ const deleteSelectedTrashTrans = async (req, res) => {
     }
 
     const deletedIds = [];
-    const skippedIds = [];
 
     user.trash = (user.trash || []).filter(trashTrans => {
       const id = trashTrans._id?.toString();
-      if (id && validIds.includes(id)) {
+      const created = new Date(trashTrans.createdAt).toISOString();
+
+      const match = validPairs.find(p => p.id === id && p.date === created);
+      if (match) {
         deletedIds.push(id);
-        return false; // Remove this
+        return false; // Remove
       }
-      return true; // Keep it
+
+      return true; // Keep
     });
 
     user.markModified("trash");
     await user.save();
 
-    skippedIds.push(...validIds.filter(id => !deletedIds.includes(id)));
+    // Collect skipped transactions
+    const validIds = validPairs.map(p => p.id);
+    const skippedIds = validIds.filter(id => !deletedIds.includes(id));
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Selected trash transactions deleted successfully",
-      deleted: deletedIds,
+      deleted: validIds,
       skipped: skippedIds,
     });
   } catch (error) {
     console.error("Error deleting trash transactions:", error);
-    res.status(500).json({ message: "Internal server error", error });
+    return res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
 
