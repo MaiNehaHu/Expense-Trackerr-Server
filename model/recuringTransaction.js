@@ -53,7 +53,7 @@ const recuringTransactionSchema = new mongoose.Schema(
       sign: { type: String, default: "-", enum: ["+", "-"] },
       type: {
         type: String,
-        enum: ["Spent", "Earned", "Borrowed", "Lend"],
+        enum: ["Spent", "Earned", "Borrowed", "Lent"],
         default: "Spent",
       },
       _id: { type: String, required: true },
