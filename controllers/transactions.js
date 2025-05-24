@@ -312,33 +312,40 @@ const deleteSelectedTransactions = async (req, res) => {
     }
 
     const deletedIds = [];
+    const trashToAdd = [];
 
-    user.transactions = (user.transactions || []).filter(searchedTrans => {
-      const id = searchedTrans._id?.toString();
-      const created = new Date(searchedTrans.createdAt).toISOString();
+    user.transactions = (user.transactions || []).filter(transaction => {
+      const id = transaction._id?.toString();
+      const created = new Date(transaction.createdAt).toISOString();
 
       const match = validPairs.find(p => p.id === id && p.date === created);
       if (match) {
         deletedIds.push(id);
-        return false; // Remove
+        trashToAdd.push({ ...transaction, deletedAt: new Date() }); // Optional: Add deletedAt timestamp
+        return false; // Remove from transactions
       }
 
       return true; // Keep
     });
 
+    // Initialize trash if it doesn't exist
+    user.trash = Array.isArray(user.trash) ? user.trash : [];
+    user.trash.push(...trashToAdd);
+
     user.markModified("transactions");
+    user.markModified("trash");
     await user.save();
 
     const validIds = validPairs.map(p => p.id);
     const skippedIds = validIds.filter(id => !deletedIds.includes(id));
 
     return res.status(200).json({
-      message: "Selected transactions deleted successfully",
-      deleted: deletedIds,
+      message: "Selected transactions moved to trash successfully",
+      trashed: deletedIds,
       skipped: skippedIds,
     });
   } catch (error) {
-    console.error("Error deleting search transactions:", error);
+    console.error("Error moving transactions to trash:", error);
     return res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
