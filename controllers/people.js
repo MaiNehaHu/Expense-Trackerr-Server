@@ -1,5 +1,5 @@
-const People = require("../model/people");
 const User = require('../model/user');
+const mongoose = require('mongoose')
 
 async function addPerson(req, res) {
     const { id: userId } = req.params;
@@ -13,11 +13,12 @@ async function addPerson(req, res) {
         const user = await User.findOne({ userId });
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        const newPerson = new People({
+        const newPerson = {
             name,
             contact,
             relation,
-        });
+            _id: new mongoose.Types.ObjectId(),
+        };
 
         user.people.push(newPerson);
         user.markModified("people");
