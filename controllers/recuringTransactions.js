@@ -1,4 +1,3 @@
-const RecuringTransaction = require("../model/recuringTransaction");
 const User = require("../model/user");
 const moment = require("moment");
 const mongoose = require('mongoose');
@@ -39,7 +38,7 @@ async function addRecuringTransactions(req, res) {
     const user = await User.findOne({ userId });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const newTransaction = new RecuringTransaction({
+    const newTransaction = {
       recuring,
       amount,
       note,
@@ -48,7 +47,8 @@ async function addRecuringTransactions(req, res) {
       image,
       reminder,
       createdAt: new Date(),
-    });
+      _id: new mongoose.Types.ObjectId(),
+    };
 
     user.recuringTransactions.push(newTransaction);
     user.markModified("recuringTransactions");
@@ -155,6 +155,8 @@ function getValidTransactionDate(year, month, day) {
   return selectedDate.format("YYYY-MM-DD");
 }
 
+import mongoose from 'mongoose';
+
 const checkAndAddRecuringTransactions = async (req, res) => {
   const { id: userId } = req.params;
 
@@ -176,19 +178,15 @@ const checkAndAddRecuringTransactions = async (req, res) => {
     let recurringAdded = false;
 
     for (const recuring of user.recuringTransactions) {
-      const { recuring: { count, pushedCount, interval, when }, lastPushedAt } = recuring;
+      const { _id, recuring: recurMeta, lastPushedAt } = recuring;
 
-      // Skip if max push count reached
-      if (count <= pushedCount) {
-        console.log(`Skipping transaction ${recuring._id}: reached max count.`);
-        continue;
-      }
+      const { count, pushedCount, interval, when } = recurMeta || {};
+
+      // Skip if already reached max count
+      if (pushedCount >= count) continue;
 
       // Skip if already pushed today
-      if (lastPushedAt && new Date(lastPushedAt).toISOString().split("T")[0] === today) {
-        console.log(`Skipping transaction ${recuring._id}: already pushed today.`);
-        continue;
-      }
+      if (lastPushedAt && new Date(lastPushedAt).toISOString().split("T")[0] === today) continue;
 
       let shouldAdd = false;
 
@@ -201,91 +199,82 @@ const checkAndAddRecuringTransactions = async (req, res) => {
           shouldAdd = true;
           break;
         case "Every week":
-          shouldAdd = when.everyWeek === currentWeekName;
+          shouldAdd = when?.everyWeek === currentWeekName;
           break;
         case "Every month":
-          const validDate = getValidTransactionDate(currentYear, currentMonth, when.everyMonth);
+          const validDate = getValidTransactionDate(currentYear, currentMonth, when?.everyMonth);
           shouldAdd = validDate === today;
           break;
         case "Every year":
-          shouldAdd = when.everyYear?.month === currentMonth && when.everyYear?.date === currentDayOfMonth;
+          shouldAdd =
+            when?.everyYear?.month === currentMonth &&
+            when?.everyYear?.date === currentDayOfMonth;
           break;
         default:
           console.log(`Unknown interval: ${interval}`);
           continue;
       }
 
-      if (shouldAdd) {
-        // Atomic check + update to avoid double insertion
-        const updateResult = await RecuringTransaction.updateOne(
-          {
-            _id: recuring._id,
-            "recuring.pushedCount": { $lt: count },
-            $or: [
-              { lastPushedAt: { $exists: false } },
-              { lastPushedAt: { $lt: new Date(today + "T00:00:00.000Z") } }
-            ]
-          },
-          {
-            $inc: { "recuring.pushedCount": 1 },
-            $set: { lastPushedAt: new Date() }
+      if (!shouldAdd) continue;
+
+      // Generate new transaction and notification
+      const txnId = new mongoose.Types.ObjectId();
+      const transactionPayload = {
+        _id: txnId,
+        amount: recuring.amount,
+        note: recuring.note,
+        category: recuring.category,
+        people: recuring.people,
+        image: recuring.image,
+        createdAt: new Date(),
+        pushedIntoTransactions: true,
+        reference_id: _id,
+      };
+
+      const notificationPayload = {
+        _id: new mongoose.Types.ObjectId(),
+        header: "Recurring Transaction Added!",
+        type: "Recurring",
+        read: false,
+        transaction: transactionPayload,
+      };
+
+      // Atomic update using positional operator
+      const result = await User.findOneAndUpdate(
+        {
+          userId,
+          "recuringTransactions._id": _id,
+          "recuringTransactions.recuring.pushedCount": { $lt: count },
+          $or: [
+            { "recuringTransactions.lastPushedAt": { $exists: false } },
+            { "recuringTransactions.lastPushedAt": { $lt: new Date(today + "T00:00:00.000Z") } }
+          ]
+        },
+        {
+          $inc: { "recuringTransactions.$.recuring.pushedCount": 1 },
+          $set: { "recuringTransactions.$.lastPushedAt": new Date() },
+          $push: {
+            transactions: transactionPayload,
+            notifications: notificationPayload
           }
-        );
+        },
+        { new: true }
+      );
 
-        // If update didn't happen
-        if (updateResult.modifiedCount === 0) {
-          console.log(`Skipping transaction ${recuring._id}: Already pushed today or reached max count.`);
-          continue;
-        }
-
-        const newTransaction = {
-          amount: recuring.amount,
-          note: recuring.note,
-          category: recuring.category,
-          people: recuring.people,
-          image: recuring.image,
-          createdAt: new Date(),
-          pushedIntoTransactions: true,
-          reference_id: recuring._id,                 // Track source recurring txn
-          _id: new mongoose.Types.ObjectId(),         // NEW ID for this instance
-        };
-
-        const notification = {
-          header: "Recurring Transaction Added!",
-          type: "Recurring",
-          read: false,
-          transaction: newTransaction,
-          _id: new mongoose.Types.ObjectId(),
-        };
-
-        user.transactions.push(newTransaction);
-        user.notifications.push(notification);
+      if (result) {
         recurringAdded = true;
-
-        // Update in-memory copy too (optional for consistency)
-        const recuringIndex = user.recuringTransactions.findIndex(
-          (rec) => rec._id.toString() === recuring._id.toString()
-        );
-
-        if (recuringIndex !== -1) {
-          user.recuringTransactions[recuringIndex].recuring.pushedCount += 1;
-          user.recuringTransactions[recuringIndex].lastPushedAt = new Date();
-          user.markModified(`recuringTransactions.${recuringIndex}`);
-        } else {
-          console.error(`Recurring transaction ${recuring._id} not found in user's records.`);
-        }
-
-        console.log(`Transaction processed: pushedCount updated to ${recuring.pushedCount}`);
+        console.log(`Recurring transaction ${_id} pushed.`);
+      } else {
+        console.log(`Skipped transaction ${_id}: may have been pushed by another process.`);
       }
     }
-
-    await user.save();
 
     if (recurringAdded) {
       return res.status(200).json({ message: "Recurring Transactions Processed Successfully" });
     } else {
       return res.status(200).json({ message: "No Recurring Transactions Matched Conditions" });
     }
+
   } catch (error) {
     console.error("Error Processing Recurring Transactions:", error);
     return res.status(500).json({ message: "Error Processing Recurring Transactions", error });
