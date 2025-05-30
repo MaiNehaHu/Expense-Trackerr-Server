@@ -155,8 +155,6 @@ function getValidTransactionDate(year, month, day) {
   return selectedDate.format("YYYY-MM-DD");
 }
 
-import mongoose from 'mongoose';
-
 const checkAndAddRecuringTransactions = async (req, res) => {
   const { id: userId } = req.params;
 
