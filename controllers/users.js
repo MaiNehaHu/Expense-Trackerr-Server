@@ -1,11 +1,5 @@
-const User = require("../model/user");
-const Category = require("../model/category");
-const People = require("../model/people");
-const Transaction = require("../model/transaction");
-const RecuringTransaction = require("../model/recuringTransaction");
-const Notification = require('../model/notification');
-const Budget = require('../model/budget');
 const mongoose = require("mongoose");
+const User = require("../model/user");
 
 // Utility function to generate unique IDs
 function generateUniqueId() {
@@ -20,24 +14,27 @@ async function addUser(req, res) {
   try {
     const uniqueId = generateUniqueId();
 
-    const defaultSpent = await Category.create({
+    const defaultSpent = {
       hexColor: "#707070",
       name: "Others",
       sign: "-",
       type: "Spent",
-    });
-    const defaultEarned = await Category.create({
+      _id: new mongoose.Types.ObjectId(),
+    };
+    const defaultEarned = {
       hexColor: "#0328fc",
       name: "Salary",
       sign: "+",
       type: "Earned",
-    });
+      _id: new mongoose.Types.ObjectId(),
+    };
 
-    const defaultPeople = await People.create({
+    const defaultPeople = {
       name: "Person Name",
       relation: "relation",
-      contact: 9999988888
-    })
+      contact: 9999988888,
+      _id: new mongoose.Types.ObjectId(),
+    }
 
     // Create the new user with the default category
     const userData = {
@@ -118,22 +115,6 @@ async function deleteUser(req, res) {
       session.endSession();
       return res.status(404).json({ error: "User not found" });
     }
-
-    const transactionIds = user.transactions.map(t => t._id);
-    const recurringTransactionIds = user.recuringTransactions.map(rt => rt._id);
-    const categoryIds = user.categories.map(c => c._id);
-    const peopleIds = user.people.map(p => p._id);
-    const notificationIds = user.notifications.map(n => n._id);
-    const budgetIds = user.budgets.map(b => b._id);
-    const trashIds = user.trash.map(t => t._id);
-
-    // Delete all related documents
-    await Transaction.deleteMany({ _id: { $in: transactionIds } }).session(session);
-    await RecuringTransaction.deleteMany({ _id: { $in: recurringTransactionIds } }).session(session);
-    await Category.deleteMany({ _id: { $in: categoryIds } }).session(session);
-    await People.deleteMany({ _id: { $in: peopleIds } }).session(session);
-    await Notification.deleteMany({ _id: { $in: notificationIds } }).session(session);
-    await Budget.deleteMany({ _id: { $in: budgetIds } }).session(session);
 
     // Delete user
     await User.findOneAndDelete({ userId: id }).session(session);

@@ -1,7 +1,7 @@
 const RecuringTransaction = require("../model/recuringTransaction");
-const Notification = require("../model/notification");
 const User = require("../model/user");
 const moment = require("moment");
+const mongoose = require('mongoose');
 
 async function getAllRecuringTransactions(req, res) {
   const { id: userId } = req.params;
@@ -196,7 +196,7 @@ const checkAndAddRecuringTransactions = async (req, res) => {
         // case "Everyday":
         //   shouldAdd = when.everyDay === currentTime;
         //   break;
-        // Only push transactions at 12:01 AM
+        // Only push transactions at 01:00 AM
         case "Everyday":
           shouldAdd = true;
           break;
@@ -216,6 +216,28 @@ const checkAndAddRecuringTransactions = async (req, res) => {
       }
 
       if (shouldAdd) {
+        // Atomic check + update to avoid double insertion
+        const updateResult = await RecuringTransaction.updateOne(
+          {
+            _id: recuring._id,
+            "recuring.pushedCount": { $lt: count },
+            $or: [
+              { lastPushedAt: { $exists: false } },
+              { lastPushedAt: { $lt: new Date(today + "T00:00:00.000Z") } }
+            ]
+          },
+          {
+            $inc: { "recuring.pushedCount": 1 },
+            $set: { lastPushedAt: new Date() }
+          }
+        );
+
+        // If update didn't happen
+        if (updateResult.modifiedCount === 0) {
+          console.log(`Skipping transaction ${recuring._id}: Already pushed today or reached max count.`);
+          continue;
+        }
+
         const newTransaction = {
           amount: recuring.amount,
           note: recuring.note,
@@ -224,33 +246,23 @@ const checkAndAddRecuringTransactions = async (req, res) => {
           image: recuring.image,
           createdAt: new Date(),
           pushedIntoTransactions: true,
-          _id: recuring._id, // Keep recurring _id reference
+          reference_id: recuring._id,                 // Track source recurring txn
+          _id: new mongoose.Types.ObjectId(),         // NEW ID for this instance
         };
 
-        const notification = new Notification({
+        const notification = {
           header: "Recurring Transaction Added!",
           type: "Recurring",
           read: false,
           transaction: newTransaction,
-        });
-
-        // we are not doing notification.save because we don't want that to be in db.
-        // Just to create a unique ID we are using it
+          _id: new mongoose.Types.ObjectId(),
+        };
 
         user.transactions.push(newTransaction);
         user.notifications.push(notification);
         recurringAdded = true;
 
-        // Update pushedCount and lastPushedAt
-        recuring.pushedCount = (recuring.pushedCount || 0) + 1;
-        recuring.lastPushedAt = new Date();
-
-        await RecuringTransaction.updateOne(
-          { _id: recuring._id },
-          { $inc: { "recuring.pushedCount": 1 }, $set: { lastPushedAt: new Date() } }
-        );
-
-        // Update the user's populated data
+        // Update in-memory copy too (optional for consistency)
         const recuringIndex = user.recuringTransactions.findIndex(
           (rec) => rec._id.toString() === recuring._id.toString()
         );
