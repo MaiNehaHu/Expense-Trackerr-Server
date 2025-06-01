@@ -166,6 +166,10 @@ async function deleteTransaction(req, res) {
   const { id: userId } = req.params;
   const { transactionId, createdAt } = req.body;
 
+  if (!transactionId || !createdAt) {
+    return res.status(404).json({ message: "Transaction ID and createdAt are needed to delete!" });
+  }
+
   try {
     const user = await User.findOne({ userId }).populate("transactions");
     if (!user) {
