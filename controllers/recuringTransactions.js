@@ -2,7 +2,7 @@ const User = require("../model/user");
 const moment = require("moment");
 const mongoose = require('mongoose');
 
-async function getAllRecuringTransactions(req, res) {
+async function getAllRecurings(req, res) {
   const { id: userId } = req.params;
 
   try {
@@ -22,7 +22,7 @@ async function getAllRecuringTransactions(req, res) {
   }
 }
 
-async function addRecuringTransactions(req, res) {
+async function addRecuring(req, res) {
   const { id: userId } = req.params;
   const {
     recuring,
@@ -64,8 +64,8 @@ async function addRecuringTransactions(req, res) {
   }
 }
 
-async function deleteRecuringTransaction(req, res) {
-  const { id: userId, recuringtransactionId } = req.params;
+async function deleteRecuring(req, res) {
+  const { id: userId, recuringId } = req.params;
 
   try {
     const user = await User.findOne({ userId });
@@ -74,7 +74,7 @@ async function deleteRecuringTransaction(req, res) {
     }
 
     const index = user.recuringTransactions.findIndex(
-      (txn) => txn._id.toString() === recuringtransactionId
+      (txn) => txn._id.toString() === recuringId
     );
 
     if (index === -1) {
@@ -92,8 +92,8 @@ async function deleteRecuringTransaction(req, res) {
   }
 }
 
-async function editRecuringTransactions(req, res) {
-  const { id: userId, recuringtransactionId } = req.params;
+async function editRecuring(req, res) {
+  const { id: userId, recuringId } = req.params;
   const {
     recuring,
     amount,
@@ -109,7 +109,7 @@ async function editRecuringTransactions(req, res) {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const index = user.recuringTransactions.findIndex(
-      (txn) => txn._id.toString() === recuringtransactionId
+      (txn) => txn._id.toString() === recuringId
     );
 
     if (index === -1) {
@@ -155,7 +155,7 @@ function getValidTransactionDate(year, month, day) {
   return selectedDate.format("YYYY-MM-DD");
 }
 
-const checkAndAddRecuringTransactions = async (req, res) => {
+const checkAndaddRecuring = async (req, res) => {
   const { id: userId } = req.params;
 
   try {
@@ -330,10 +330,10 @@ const deleteSelectedRecurrings = async (req, res) => {
 };
 
 module.exports = {
-  checkAndAddRecuringTransactions,
-  getAllRecuringTransactions,
-  addRecuringTransactions,
-  deleteRecuringTransaction,
-  editRecuringTransactions,
+  checkAndaddRecuring,
+  getAllRecurings,
+  addRecuring,
+  deleteRecuring,
+  editRecuring,
   deleteSelectedRecurrings
 };

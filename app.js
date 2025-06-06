@@ -31,8 +31,8 @@ app.use("/api/analytics", analyticss_route);
 const transactions_route = require("./routes/transactions");
 app.use("/api/transactions", transactions_route);
 
-const recuring_transactions_route = require("./routes/recuringTransactions");
-app.use("/api/recuring-transactions", recuring_transactions_route);
+const recurings_route = require("./routes/recurings");
+app.use("/api/recurings", recurings_route);
 
 // const transaction_img_route = require("./routes/transactionImage");
 // app.use("/api/transaction-image", transaction_img_route);
