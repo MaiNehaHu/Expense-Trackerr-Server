@@ -144,91 +144,73 @@ async function editRecuringTransactions(req, res) {
   }
 }
 
-function getValidTransactionDate(year, month, day) {
-  let selectedDate = moment(`${year}-${month}-${day}`, "YYYY-MM-DD");
-
-  // If the date is invalid, adjust to the last day of the month
-  if (selectedDate.date() !== day) {
-    selectedDate = moment(`${year}-${month}-01`, "YYYY-MM-DD").endOf("month");
-  }
-
-  return selectedDate.format("YYYY-MM-DD");
-}
-
 const checkAndAddRecuringTransactions = async (req, res) => {
   const { id: userId } = req.params;
 
   try {
-    const user = await User.findOne({ userId }).populate("recuringTransactions");
+    const user = await User.findOne({ userId }).lean();
 
     if (!user) {
       console.log("User not found");
       return res.status(404).json({ message: "User not found" });
     }
 
-    const currentDate = new Date();
-    const todayStart = new Date(currentDate.setHours(0, 0, 0, 0)); // Normalized to start of day
-    const todayString = todayStart.toISOString().split("T")[0];
-    const currentDayOfMonth = todayStart.getDate();
-    const currentWeekName = todayStart.toLocaleDateString("en-US", { weekday: "long" });
-    const currentMonth = todayStart.getMonth() + 1;
-    const currentYear = todayStart.getFullYear();
+    const today = moment().startOf("day");
+    const currentWeekday = today.format("dddd");
+    const currentMonth = today.month() + 1;
+    // const currentYear = today.year();
+    const currentDay = today.date();
 
     let recurringAdded = false;
 
-    for (const recuring of user.recuringTransactions) {
-      const { _id, recuring: recurMeta, lastPushedAt } = recuring;
+    for (const recurring of user.recuringTransactions || []) {
+      const { _id, recuring: meta, lastPushedAt } = recurring;
+      if (!meta) continue;
 
-      const { count, pushedCount, interval, when } = recurMeta || {};
+      const { count, pushedCount, interval, when } = meta;
 
-      // Skip if already reached max count
+      // Skip if max count reached
       if (pushedCount >= count) continue;
 
       // Skip if already pushed today
-      if (lastPushedAt) {
-        const lastDate = new Date(lastPushedAt).setHours(0, 0, 0, 0);
-        if (lastDate === todayStart.getTime()) continue; // Already pushed today
-      }
+      if (lastPushedAt && moment(lastPushedAt).isSame(today, "day")) continue;
 
       let shouldAdd = false;
 
       switch (interval) {
-        // case "Everyday":
-        //   shouldAdd = when.everyDay === currentTime;
-        //   break;
-        // Only push transactions at 01:00 AM
         case "Everyday":
           shouldAdd = true;
           break;
+
         case "Every week":
-          shouldAdd = when?.everyWeek === currentWeekName;
+          shouldAdd = when?.everyWeek === currentWeekday;
           break;
+
         case "Every month":
-          const validDate = getValidTransactionDate(currentYear, currentMonth, when?.everyMonth);
-          shouldAdd = validDate === todayString;
+          shouldAdd = currentDay === when?.everyMonth;
           break;
+
         case "Every year":
-          shouldAdd = when?.everyYear?.month === currentMonth &&
-            when?.everyYear?.date === currentDayOfMonth;
+          shouldAdd =
+            when?.everyYear?.month === currentMonth &&
+            when?.everyYear?.date === currentDay;
           break;
+
         default:
-          console.log(`Unknown interval: ${interval}`);
+          console.log(`Unknown interval type: ${interval}`);
           continue;
       }
 
       if (!shouldAdd) continue;
 
-      // Generate new transaction and notification
       const txnId = new mongoose.Types.ObjectId();
       const transactionPayload = {
         _id: txnId,
-        amount: recuring.amount,
-        note: recuring.note,
-        category: recuring.category,
-        people: recuring.people,
-        image: recuring.image,
+        amount: recurring.amount,
+        note: recurring.note,
+        category: recurring.category,
+        people: recurring.people,
         createdAt: new Date(),
-        pushedIntoTransactions: true,
         reference_id: _id,
       };
 
@@ -240,7 +222,6 @@ const checkAndAddRecuringTransactions = async (req, res) => {
         transaction: transactionPayload,
       };
 
-      // Atomic update using positional operator
       const result = await User.findOneAndUpdate(
         {
           userId,
@@ -248,7 +229,7 @@ const checkAndAddRecuringTransactions = async (req, res) => {
           "recuringTransactions.recuring.pushedCount": { $lt: count },
           $or: [
             { "recuringTransactions.lastPushedAt": { $exists: false } },
-            { "recuringTransactions.lastPushedAt": { $lt: todayStart } }
+            { "recuringTransactions.lastPushedAt": { $lt: today.toDate() } }
           ]
         },
         {
@@ -263,22 +244,22 @@ const checkAndAddRecuringTransactions = async (req, res) => {
       );
 
       if (result) {
-        recurringAdded = true;
         console.log(`Recurring transaction ${_id} pushed.`);
+        recurringAdded = true;
       } else {
-        console.log(`Skipped transaction ${_id}: may have been pushed before.`);
+        console.log(`Skipped transaction ${_id}: may have been pushed already today.`);
       }
     }
 
     return res.status(200).json({
       message: recurringAdded
         ? "Recurring Transactions Processed Successfully"
-        : "No Recurring Transactions Matched Conditions"
+        : "No Recurring Transactions Matched Conditions",
     });
 
   } catch (error) {
-    console.error("Error Processing Recurring Transactions:", error);
-    return res.status(500).json({ message: "Error Processing Recurring Transactions", error });
+    console.error("Error processing recurring transactions:", error);
+    return res.status(500).json({ message: "Internal Server Error", error });
   }
 };
 
