@@ -14,6 +14,6 @@ router.route('/recurrings/:id').delete(deleteSelectedRecurrings)
 router.route('/people/:id').delete(deleteSelectedPeople)
 router.route('/trash/:id').delete(deleteSelectedTrashTrans)
 router.route('/transactions/:id').delete(deleteSelectedTransactions)
-router.route('/revert-trash/:id').delete(revertSelectedTrashTrans)
+router.route('/revert-trash/:id').post(revertSelectedTrashTrans)
 
 module.exports = router;
