@@ -219,9 +219,8 @@ const checkAndAddRecuringTransactions = async (req, res) => {
       if (!shouldAdd) continue;
 
       // Generate new transaction and notification
-      const txnId = new mongoose.Types.ObjectId();
       const transactionPayload = {
-        _id: txnId,
+        _id: new mongoose.Types.ObjectId(),
         amount: recuring.amount,
         note: recuring.note,
         category: recuring.category,
