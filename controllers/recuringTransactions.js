@@ -237,6 +237,7 @@ const checkAndAddRecuringTransactions = async (req, res) => {
         type: "Recurring",
         read: false,
         transaction: transactionPayload,
+        createdAt: new Date(),
       };
 
       // Atomic update using positional operator
