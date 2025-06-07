@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const User = require("../model/user");
+const Category = require('../model/category');
+const People = require('../model/people');
 
 // Utility function to generate unique IDs
 function generateUniqueId() {
@@ -14,27 +16,24 @@ async function addUser(req, res) {
   try {
     const uniqueId = generateUniqueId();
 
-    const defaultSpent = {
+    const defaultSpent = new Category({
       hexColor: "#707070",
       name: "Others",
       sign: "-",
       type: "Spent",
-      _id: new mongoose.Types.ObjectId(),
-    };
-    const defaultEarned = {
+    });
+    const defaultEarned = new Category({
       hexColor: "#0328fc",
       name: "Salary",
       sign: "+",
       type: "Earned",
-      _id: new mongoose.Types.ObjectId(),
-    };
+    });
 
-    const defaultPeople = {
+    const defaultPeople = new People({
       name: "Person Name",
       relation: "relation",
       contact: 9999988888,
-      _id: new mongoose.Types.ObjectId(),
-    }
+    })
 
     // Create the new user with the default category
     const userData = {

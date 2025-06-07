@@ -4,7 +4,6 @@ const linkSchema = new mongoose.Schema(
     {
         token: String,
         userId: String,
-        sharedPeopleId: String,
         categoryId: String,
         peopleId: String,
         createdAt: Date,

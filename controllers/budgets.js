@@ -1,5 +1,6 @@
-const User = require('../model/user')
-const mongoose = require('mongoose')
+const User = require('../model/user');
+const Budget = require('../model/budget')
+// const mongoose = require('mongoose');
 
 const getAllBudgets = async (req, res) => {
     const { id: userId } = req.params;
@@ -27,14 +28,13 @@ const addBudget = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        const newBudget = {
+        const newBudget = new Budget({
             type,
             period,
             totalBudget,
             totalSpent,
             categories,
-            _id: new mongoose.Types.ObjectId(),
-        };
+        });
 
         user.budgets.push(newBudget);
         user.markModified("budgets");

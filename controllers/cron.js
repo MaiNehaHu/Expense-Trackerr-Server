@@ -1,4 +1,4 @@
-const { checkAndaddRecuring } = require("./recuringTransactions");
+const { checkAndaddRecuring } = require("./recurings");
 const { autoDeleteOlderThanWeek } = require("./trash");
 const User = require("../model/user");
 const connectDB = require("../db/connect");

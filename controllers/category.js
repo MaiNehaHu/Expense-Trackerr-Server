@@ -1,5 +1,6 @@
 const User = require("../model/user");
-const mongoose = require('mongoose');
+const Category = require('../model/category')
+// const mongoose = require('mongoose');
 
 // Get All Categories
 const getAllCategories = async (req, res) => {
@@ -27,13 +28,12 @@ const addCategory = async (req, res) => {
     const user = await User.findOne({ userId });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const newCategory = {
+    const newCategory = new Category({
       name,
       hexColor,
       type,
       sign,
-      _id: new mongoose.Types.ObjectId(),
-    };
+    });
 
     user.categories.push(newCategory);
     user.markModified("categories");

@@ -2,7 +2,6 @@
 const User = require("../model/user");
 const Transaction = require("../model/transaction");
 
-
 // Add a transaction
 async function addTransaction(req, res) {
   const { id: userId } = req.params;
@@ -207,89 +206,6 @@ async function deleteTransaction(req, res) {
   }
 }
 
-const checkAndPushReminder = async (req, res) => {
-  const { id: userId } = req.params;
-
-  try {
-    const user = await User.findOne({ userId }).populate("recuringTransactions");
-    if (!user) {
-      console.log("User not found");
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const currentDate = new Date();
-
-    // Calculate the date for two days from today
-    const twoDaysLater = new Date();
-    twoDaysLater.setDate(currentDate.getDate() + 2);
-
-    let notificationAdded = false;
-
-    for (const reminderTransaction of user.transactions) {
-      const { reminded, reminder } = reminderTransaction;
-
-      if (!reminder || reminded) {
-        console.log("Skipping transaction with no reminder or already reminded.");
-        continue; // Skip this transaction
-      }
-
-      const reminderDate = new Date(reminder);
-
-      // Check if the `reminder` matches two days after today
-      const isTwoDaysLater =
-        reminderDate.getFullYear() === twoDaysLater.getFullYear() &&
-        reminderDate.getMonth() === twoDaysLater.getMonth() &&
-        reminderDate.getDate() === twoDaysLater.getDate();
-
-      const isToday =
-        reminderDate.getFullYear() === currentDate.getFullYear() &&
-        reminderDate.getMonth() === currentDate.getMonth() &&
-        reminderDate.getDate() === currentDate.getDate();
-
-      if (isTwoDaysLater || isToday) {
-        const notification = {
-          header: "Reminder For You!!",
-          type: "Reminder",
-          read: false,
-          transaction: reminderTransaction,
-        };
-
-        if (!reminded) {
-          user.notifications.push(notification);
-
-          const transactionIndex = user.transactions.findIndex(
-            (rem) => rem._id.toString() === reminderTransaction._id.toString()
-          );
-
-          if (transactionIndex !== -1) {
-            // Ensure the `transaction` property exists before modifying
-            user.transactions[transactionIndex].reminded = true;
-
-            user.markModified(`transactions.${transactionIndex}`);
-            notificationAdded = true;
-          } else {
-            console.error(`Reminder transaction with ID: ${reminderTransaction._id} not found in user's transactions.`);
-          }
-        }
-      }
-    }
-
-    if (notificationAdded) {
-      await user.save();
-      console.log("Reminders processed and saved successfully.");
-    }
-
-    if (notificationAdded) {
-      res.status(200).json({ message: "Reminders processed successfully" });
-    } else {
-      res.status(200).json({ message: "No reminders matched the condition." });
-    }
-  } catch (error) {
-    console.error("Error checking and pushing reminders:", error);
-    res.status(500).json({ message: "Error processing reminders", error });
-  }
-};
-
 const deleteSelectedTransactions = async (req, res) => {
   const { id: userId } = req.params;
   const { transactions } = req.body;
@@ -325,7 +241,7 @@ const deleteSelectedTransactions = async (req, res) => {
       const match = validPairs.find(p => p.id === id && p.date === created);
       if (match) {
         deletedIds.push(id);
-        trashToAdd.push({ ...transaction, deletedAt: new Date() }); // Optional: Add deletedAt timestamp
+        trashToAdd.push({ ...transaction, deletedAt: new Date() });
         return false; // Remove from transactions
       }
 
@@ -359,6 +275,5 @@ module.exports = {
   getAllTransactions,
   editTransaction,
   deleteTransaction,
-  checkAndPushReminder,
   deleteSelectedTransactions
 };

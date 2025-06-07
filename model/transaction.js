@@ -4,6 +4,7 @@ const transactionSchema = new mongoose.Schema(
   {
     createdAt: { type: Date, default: Date.now },
     editedAt: { type: Date },
+    deletedAt: { type: Date },
     amount: { type: Number, required: true },
     note: { type: String, default: "" },
     category: {
