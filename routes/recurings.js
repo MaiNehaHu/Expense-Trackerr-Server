@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { checkAndaddRecuring, getAllRecurings, addRecuring, deleteRecuring, editRecuring } = require('../controllers/recuringTransactions');
+const { checkAndaddRecuring, getAllRecurings, addRecuring, deleteRecuring, editRecuring } = require('../controllers/recurings');
 
 router.route('/:id').get(getAllRecurings).post(addRecuring);
 

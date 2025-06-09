@@ -3,7 +3,7 @@ const router = express.Router();
 
 const { deleteSelectedNotifications } = require('../controllers/notifications');
 const { deleteSelectedCategories } = require('../controllers/category');
-const { deleteSelectedRecurrings } = require('../controllers/recuringTransactions');
+const { deleteSelectedRecurrings } = require('../controllers/recurings');
 const { deleteSelectedPeople } = require('../controllers/people');
 const { deleteSelectedTrashTrans, revertSelectedTrashTrans } = require('../controllers/trash');
 const { deleteSelectedTransactions } = require('../controllers/transactions');
