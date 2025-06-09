@@ -1,4 +1,4 @@
-const { checkAndaddRecuring } = require("./recurings");
+const { checkAndProcessRecurring } = require("./recurings");
 const { autoDeleteOlderThanWeek } = require("./trash");
 const User = require("../model/user");
 const connectDB = require("../db/connect");
@@ -24,7 +24,7 @@ const runCronJob = async (req, res) => {
             };
 
             try {
-                await checkAndaddRecuring(fakeReq, fakeRes);
+                await checkAndProcessRecurring(fakeReq, fakeRes);
                 console.log(`Processed recurring for ${user.name} with _id ${user.userId}`);
             } catch (err) {
                 console.error(`Error processing recurring for ${user.name} with _id ${user.userId}:`, err);

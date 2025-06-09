@@ -155,7 +155,7 @@ function getValidTransactionDate(year, month, day) {
   return selectedDate.format("YYYY-MM-DD");
 }
 
-const checkAndaddRecuring = async (req, res) => {
+const checkAndProcessRecurring = async (req, res) => {
   const { id: userId } = req.params;
 
   try {
@@ -330,7 +330,7 @@ const deleteSelectedRecurrings = async (req, res) => {
 };
 
 module.exports = {
-  checkAndaddRecuring,
+  checkAndProcessRecurring,
   getAllRecurings,
   addRecuring,
   deleteRecuring,
