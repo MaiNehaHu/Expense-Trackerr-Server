@@ -161,49 +161,38 @@ const checkAndProcessRecurring = async (req, res) => {
     const currentWeekName = todayStart.toLocaleDateString("en-US", { weekday: "long" });
     const currentMonth = todayStart.getMonth() + 1;
     // const currentYear = todayStart.getFullYear();
-    // const todayString = todayStart.toISOString().split("T")[0];
+    const todayStr = new Date().toISOString().split("T")[0];
 
     let recurringAdded = false;
 
     for (const recuring of user.recuringTransactions) {
       const { _id, recuring: recurMeta, lastPushedAt } = recuring;
-
       const { count, pushedCount, interval, when } = recurMeta || {};
 
-      // Skip if already reached max count
       if (pushedCount >= count) continue;
 
-      // Skip if already pushed today
-      if (lastPushedAt) {
-        const lastDate = new Date(lastPushedAt).setHours(0, 0, 0, 0);
-        if (lastDate === todayStart.getTime()) continue; // Already pushed today
-      }
+      const lastDateStr = lastPushedAt
+        ? new Date(lastPushedAt).toISOString().split("T")[0]
+        : null;
+
+      if (lastDateStr === todayStr) continue;
 
       let shouldAdd = false;
 
       switch (interval) {
-        // case "Everyday":
-        //   shouldAdd = when.everyDay === currentTime;
-        //   break;
-
         case "Everyday":
           shouldAdd = true;
           break;
-
         case "Every week":
           shouldAdd = when?.everyWeek === currentWeekName;
           break;
-
         case "Every month":
           shouldAdd = currentDayOfMonth === when?.everyMonth;
           break;
-
         case "Every year":
-          shouldAdd =
-            when?.everyYear?.month === currentMonth &&
+          shouldAdd = when?.everyYear?.month === currentMonth &&
             when?.everyYear?.date === currentDayOfMonth;
           break;
-
         default:
           console.log(`Unknown interval: ${interval}`);
           continue;
@@ -211,29 +200,7 @@ const checkAndProcessRecurring = async (req, res) => {
 
       if (!shouldAdd) continue;
 
-      // Generate new transaction and notification
-      const transactionPayload = {
-        _id: new mongoose.Types.ObjectId(),
-        amount: recuring.amount,
-        note: recuring.note,
-        category: recuring.category,
-        people: recuring.people,
-        image: recuring.image,
-        createdAt: new Date(),
-        pushedIntoTransactions: true,
-        reference_id: _id,
-      };
-
-      const notificationPayload = {
-        _id: new mongoose.Types.ObjectId(),
-        header: "Recurring Transaction Added!",
-        type: "Recurring",
-        read: false,
-        transaction: transactionPayload,
-        createdAt: new Date(),
-      };
-
-      // Atomic update using positional operator
+      // Ensure atomic update is also using date-only string
       const result = await User.findOneAndUpdate(
         {
           userId,
@@ -241,7 +208,19 @@ const checkAndProcessRecurring = async (req, res) => {
           "recuringTransactions.recuring.pushedCount": { $lt: count },
           $or: [
             { "recuringTransactions.lastPushedAt": { $exists: false } },
-            { "recuringTransactions.lastPushedAt": { $lt: todayStart } },
+            {
+              $expr: {
+                $lt: [
+                  {
+                    $dateToString: {
+                      format: "%Y-%m-%d",
+                      date: "$recuringTransactions.lastPushedAt",
+                    },
+                  },
+                  todayStr,
+                ],
+              },
+            },
           ],
         },
         {
