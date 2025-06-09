@@ -155,13 +155,14 @@ const checkAndProcessRecurring = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const currentDate = new Date();
-    const todayStart = new Date(currentDate.setHours(0, 0, 0, 0));
+    const now = new Date();
+    const todayStart = new Date(now.setHours(0, 0, 0, 0));
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(todayStart.getDate() + 1);
+
     const currentDayOfMonth = todayStart.getDate();
     const currentWeekName = todayStart.toLocaleDateString("en-US", { weekday: "long" });
     const currentMonth = todayStart.getMonth() + 1;
-    // const currentYear = todayStart.getFullYear();
-    const todayStr = new Date().toISOString().split("T")[0];
 
     let recurringAdded = false;
 
@@ -169,16 +170,19 @@ const checkAndProcessRecurring = async (req, res) => {
       const { _id, recuring: recurMeta, lastPushedAt } = recuring;
       const { count, pushedCount, interval, when } = recurMeta || {};
 
+      // Skip if already max pushed
       if (pushedCount >= count) continue;
 
-      const lastDateStr = lastPushedAt
-        ? new Date(lastPushedAt).toISOString().split("T")[0]
-        : null;
+      // Skip if already pushed today using window range
+      if (lastPushedAt) {
+        const pushedTime = new Date(lastPushedAt).getTime();
+        if (pushedTime >= todayStart.getTime() && pushedTime < tomorrowStart.getTime()) {
+          continue;
+        }
+      }
 
-      if (lastDateStr === todayStr) continue;
-
+      // Check recurrence logic
       let shouldAdd = false;
-
       switch (interval) {
         case "Everyday":
           shouldAdd = true;
@@ -190,7 +194,8 @@ const checkAndProcessRecurring = async (req, res) => {
           shouldAdd = currentDayOfMonth === when?.everyMonth;
           break;
         case "Every year":
-          shouldAdd = when?.everyYear?.month === currentMonth &&
+          shouldAdd =
+            when?.everyYear?.month === currentMonth &&
             when?.everyYear?.date === currentDayOfMonth;
           break;
         default:
@@ -200,7 +205,29 @@ const checkAndProcessRecurring = async (req, res) => {
 
       if (!shouldAdd) continue;
 
-      // Ensure atomic update is also using date-only string
+      // Payloads
+      const transactionPayload = {
+        _id: new mongoose.Types.ObjectId(),
+        amount: recuring.amount,
+        note: recuring.note,
+        category: recuring.category,
+        people: recuring.people,
+        image: recuring.image,
+        createdAt: new Date(),
+        pushedIntoTransactions: true,
+        reference_id: _id,
+      };
+
+      const notificationPayload = {
+        _id: new mongoose.Types.ObjectId(),
+        header: "Recurring Transaction Added!",
+        type: "Recurring",
+        read: false,
+        transaction: transactionPayload,
+        createdAt: new Date(),
+      };
+
+      // Atomic update – ensure we match only if not pushed today
       const result = await User.findOneAndUpdate(
         {
           userId,
@@ -209,16 +236,8 @@ const checkAndProcessRecurring = async (req, res) => {
           $or: [
             { "recuringTransactions.lastPushedAt": { $exists: false } },
             {
-              $expr: {
-                $lt: [
-                  {
-                    $dateToString: {
-                      format: "%Y-%m-%d",
-                      date: "$recuringTransactions.lastPushedAt",
-                    },
-                  },
-                  todayStr,
-                ],
+              "recuringTransactions.lastPushedAt": {
+                $lt: todayStart,
               },
             },
           ],
@@ -238,7 +257,7 @@ const checkAndProcessRecurring = async (req, res) => {
         recurringAdded = true;
         console.log(`Recurring transaction ${_id} pushed.`);
       } else {
-        console.log(`Skipped transaction ${_id}: may have been pushed before.`);
+        console.log(`Skipped transaction ${_id}: already pushed today.`);
       }
     }
 
