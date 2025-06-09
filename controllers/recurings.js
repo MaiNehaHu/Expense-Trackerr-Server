@@ -144,17 +144,6 @@ async function editRecuring(req, res) {
   }
 }
 
-function getValidTransactionDate(year, month, day) {
-  let selectedDate = moment(`${year}-${month}-${day}`, "YYYY-MM-DD");
-
-  // If the date is invalid, adjust to the last day of the month
-  if (selectedDate.date() !== day) {
-    selectedDate = moment(`${year}-${month}-01`, "YYYY-MM-DD").endOf("month");
-  }
-
-  return selectedDate.format("YYYY-MM-DD");
-}
-
 const checkAndProcessRecurring = async (req, res) => {
   const { id: userId } = req.params;
 
@@ -167,12 +156,12 @@ const checkAndProcessRecurring = async (req, res) => {
     }
 
     const currentDate = new Date();
-    const todayStart = new Date(currentDate.setHours(0, 0, 0, 0)); // Normalized to start of day
-    const todayString = todayStart.toISOString().split("T")[0];
+    const todayStart = new Date(currentDate.setHours(0, 0, 0, 0));
     const currentDayOfMonth = todayStart.getDate();
     const currentWeekName = todayStart.toLocaleDateString("en-US", { weekday: "long" });
     const currentMonth = todayStart.getMonth() + 1;
-    const currentYear = todayStart.getFullYear();
+    // const currentYear = todayStart.getFullYear();
+    // const todayString = todayStart.toISOString().split("T")[0];
 
     let recurringAdded = false;
 
@@ -196,21 +185,25 @@ const checkAndProcessRecurring = async (req, res) => {
         // case "Everyday":
         //   shouldAdd = when.everyDay === currentTime;
         //   break;
-        // Only push transactions at 01:00 AM
+
         case "Everyday":
           shouldAdd = true;
           break;
+
         case "Every week":
           shouldAdd = when?.everyWeek === currentWeekName;
           break;
+
         case "Every month":
-          const validDate = getValidTransactionDate(currentYear, currentMonth, when?.everyMonth);
-          shouldAdd = validDate === todayString;
+          shouldAdd = currentDayOfMonth === when?.everyMonth;
           break;
+
         case "Every year":
-          shouldAdd = when?.everyYear?.month === currentMonth &&
+          shouldAdd =
+            when?.everyYear?.month === currentMonth &&
             when?.everyYear?.date === currentDayOfMonth;
           break;
+
         default:
           console.log(`Unknown interval: ${interval}`);
           continue;
@@ -248,16 +241,16 @@ const checkAndProcessRecurring = async (req, res) => {
           "recuringTransactions.recuring.pushedCount": { $lt: count },
           $or: [
             { "recuringTransactions.lastPushedAt": { $exists: false } },
-            { "recuringTransactions.lastPushedAt": { $lt: todayStart } }
-          ]
+            { "recuringTransactions.lastPushedAt": { $lt: todayStart } },
+          ],
         },
         {
           $inc: { "recuringTransactions.$.recuring.pushedCount": 1 },
           $set: { "recuringTransactions.$.lastPushedAt": new Date() },
           $push: {
             transactions: transactionPayload,
-            notifications: notificationPayload
-          }
+            notifications: notificationPayload,
+          },
         },
         { new: true }
       );
@@ -273,9 +266,8 @@ const checkAndProcessRecurring = async (req, res) => {
     return res.status(200).json({
       message: recurringAdded
         ? "Recurring Transactions Processed Successfully"
-        : "No Recurring Transactions Matched Conditions"
+        : "No Recurring Transactions Matched Conditions",
     });
-
   } catch (error) {
     console.error("Error Processing Recurring Transactions:", error);
     return res.status(500).json({ message: "Error Processing Recurring Transactions", error });
