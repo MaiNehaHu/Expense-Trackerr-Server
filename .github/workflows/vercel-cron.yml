@@ -2,7 +2,7 @@ name: Run Vercel Cron Job
 
 on:
   schedule:
-    - cron: "00 00 * * *"  # Runs at 05:30 AM IST daily
+    - cron: "00 19 * * *"  # Runs at 12:30 AM IST daily
   workflow_dispatch:       # Allows manual trigger
 
 concurrency:
