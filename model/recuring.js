@@ -15,7 +15,6 @@ const recuringTransactionSchema = new mongoose.Schema(
           type: String,
           validate: {
             validator: function (v) {
-              // Validate time in HH:mm AM/PM format
               return /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i.test(v);
             },
             message: (props) =>
@@ -24,6 +23,7 @@ const recuringTransactionSchema = new mongoose.Schema(
         },
         everyWeek: {
           type: String,
+          enum: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
         },
         everyMonth: {
           type: Number,
@@ -32,9 +32,9 @@ const recuringTransactionSchema = new mongoose.Schema(
         },
         everyYear: {
           month: {
-            type: Number,
+            type: Number, // fixed: should be 1-12
             min: 1,
-            max: 31,
+            max: 12,
           },
           date: {
             type: Number,
@@ -61,7 +61,7 @@ const recuringTransactionSchema = new mongoose.Schema(
     people: {
       name: { type: String },
       contact: { type: Number },
-      relation: { type: String }
+      relation: { type: String },
     },
     image: { type: String },
     pushedIntoTransactions: { type: Boolean, default: false },
@@ -70,7 +70,6 @@ const recuringTransactionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Middleware to set default values dynamically based on the interval
 recuringTransactionSchema.pre("save", function (next) {
   const { interval, when } = this.recuring;
 
@@ -92,10 +91,9 @@ recuringTransactionSchema.pre("save", function (next) {
       break;
     case "Every year":
       if (!when.everyYear) {
-        this.recuring.when.everyYear = { month: "January", date: 1 };
+        this.recuring.when.everyYear = { month: 1, date: 1 };
       } else {
-        if (!when.everyYear.month)
-          this.recuring.when.everyYear.month = "January";
+        if (!when.everyYear.month) this.recuring.when.everyYear.month = 1;
         if (!when.everyYear.date) this.recuring.when.everyYear.date = 1;
       }
       break;
