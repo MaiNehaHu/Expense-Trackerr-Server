@@ -2,16 +2,25 @@ name: Run Vercel Cron Job
 
 on:
   schedule:
-    - cron: "00 19 * * *"  # Runs at 12:30 AM IST daily
-  workflow_dispatch:       # Allows manual trigger
+    - cron: "00 19 * * *"  # 12:30 AM IST
+    - cron: "00 20 * * *"  # 1:30 AM IST
+  workflow_dispatch:
 
 concurrency:
   group: "vercel-cron-job"
-  cancel-in-progress: true  # Ensures only one run at a time
+  cancel-in-progress: true
 
 jobs:
-  trigger-vercel-api:
+  trigger-vercel-api-1:
+    if: github.event.schedule == '00 19 * * *'
     runs-on: ubuntu-latest
     steps:
-      - name: Call Vercel API
+      - name: Call Vercel API for First Job
         run: curl -X GET "https://expense-trackerr-server.vercel.app/api/cron"
+
+  trigger-vercel-api-2:
+    if: github.event.schedule == '00 20 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Vercel API for Second Job
+        run: curl -X GET "https://expense-trackerr-server.vercel.app/api/cron-to-deduprecurring"
